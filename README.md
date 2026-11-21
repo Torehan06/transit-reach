@@ -1,12 +1,20 @@
 # Transit Reach
 
-Interactive static web app showing how much of each city—and how many of its residents—are within walking distance of rail and rapid transit across **65 global cities**.
+Interactive static web app showing how much of each city—and how many of its residents—are within walking distance of rail and rapid transit across **148 cities on 6 continents**.
 
 - **Street-network walking distance** (not straight-line circles) from 0 to 2 miles (0 to 3.22 km), with instant client-side slider updates and a `mi` / `km` toggle
 - **6 toggleable transit modes**: Metro / Subway, Tram / Light Rail, Commuter / Regional Rail, BRT, Ferry, and Funicular / Cable Car (with duplicate OSM station/platform nodes merged per mode)
 - **Zoom-adaptive population dot-density layer** built from GHSL GHS-POP 2025 (100 m equal-area grid), with fixed deterministic dot positions colored covered vs. uncovered and live people-per-dot scaling (`500` → `250` → `125` → `25` people/dot)
-- **Side-by-side & ranked comparison** across comparable city-proper boundaries grouped into 5 continents, for any combination of distance and transit modes
-- **Tap or click anywhere** inside a city to inspect walking distance to the nearest station and highlight it on the map
+- **Side-by-side & ranked comparison** across comparable city-proper boundaries grouped into 6 continents, for any combination of distance and transit modes
+- **Tap or click anywhere** inside a city to inspect walking distance to the nearest station and highlight it on the map (beyond the 2-mile limit it shows an estimate: straight line × 1.3)
+
+### Why do some cities reach people and others don't?
+
+- **Reach curve**: share of residents covered vs walking distance from 0 to 2 mi, with up to three cities overlaid, or a per-mode view showing people reached per station. Tap the chart to set the distance.
+- **Close-in share**: coverage within ½ mi ÷ coverage within 1 mi. High means stations sit among homes; low means many people live a long walk away. Also a sortable column in the comparison table.
+- **Stations vs reach scatter** (comparison modal): coverage against stations per million residents with a logistic trend line. Cities above the line reach more people than their station count predicts.
+- **Biggest gaps**: the largest clusters of people beyond the walking distance in the area on screen, with the nearest station to each.
+- **Sketch a line**: tap to draw a hypothetical line, pick station spacing (400 m / 800 m / 1.6 km) and see how many people it would newly reach. This is an estimate (straight line × 1.3 over the population dots loaded on screen), not a routed walk.
 
 ---
 
@@ -16,7 +24,7 @@ Interactive static web app showing how much of each city—and how many of its r
 Generated city data (`public/data/`) is not committed to git; it is distributed via GitHub Releases. To run locally, either run the pipeline below or download the latest data release into `public/`:
 
 ```bash
-gh release download data-v2 --pattern transit-reach-data.tar --dir /tmp
+gh release download data-v3 --pattern transit-reach-data.tar --dir /tmp
 tar -xf /tmp/transit-reach-data.tar -C public
 ```
 
@@ -42,14 +50,14 @@ python3.12 -m venv .venv
 # Build one or more cities
 .venv/bin/python pipeline/build_city.py ankara istanbul new-york
 
-# Build all 65 cities (cleaning up cached PBFs after each city)
+# Build all 148 cities (cleaning up cached PBFs after each city)
 .venv/bin/python pipeline/build_city.py --all --cleanup
 ```
 
 Adding a new city requires only one config entry in [`cities.json`](cities.json) and re-running `pipeline/build_city.py <city_id>`.
 
 ### Publishing a New Data Release
-Because generated `.pmtiles`, station JSONs, and `summary.json` total ~325 MB across all 65 cities, `public/data/` is gitignored and hosted as a single archive (`transit-reach-data.tar`) on a GitHub Release downloaded by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) at build time.
+Because generated `.pmtiles`, station JSONs, and `summary.json` total ~SIZE MB across all 148 cities, `public/data/` is gitignored and hosted as a single archive (`transit-reach-data.tar`) on a GitHub Release downloaded by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) at build time.
 
 To publish updated city data (for example, `data-v3`):
 ```bash
@@ -96,77 +104,170 @@ rm -f /tmp/transit-reach-data.tar
 
 ---
 
-## City Boundaries (All 65 Cities)
+## City Boundaries (All 148 Cities)
 
-Comparable "the city itself" administrative boundaries are used across all 65 cities. In Türkiye, metropolitan municipalities span entire mostly-rural provinces, so the central urban districts (*merkez ilçeler*) are used instead; analogous urban-core district groupings are used for Shanghai, Beijing, Moscow, Athens, Baku, Santiago, Sydney, and Melbourne.
+Comparable "the city itself" administrative boundaries are used across all 148 cities. In Türkiye, metropolitan municipalities span entire mostly-rural provinces, so the central urban districts (*merkez ilçeler*) are used instead; analogous urban-core district groupings are used for Shanghai, Beijing, Moscow, Athens, Baku, Santiago, Sydney, and Melbourne.
 
 | Continent | City | Country | Boundary Chosen |
 | --- | --- | --- | --- |
-| Europe | Vienna | Austria | City and State of Vienna (*Stadt Wien*, 23 districts) |
+| Europe | Vienna | Austria | City and State of Vienna (Stadt Wien, 23 districts) |
 | Europe | Brussels | Belgium | Brussels-Capital Region (19 municipalities) |
-| Europe | Prague | Czechia | Capital City of Prague (*Hlavní město Praha*) |
+| Europe | Prague | Czechia | City of Prague (Hlavní město Praha) |
 | Europe | Copenhagen | Denmark | Copenhagen and Frederiksberg municipalities (Frederiksberg enclave included) |
-| Europe | Paris | France | City of Paris (*Ville de Paris*, 20 arrondissements) |
-| Europe | Berlin | Germany | State of Berlin (*Land Berlin*) |
-| Europe | Frankfurt | Germany | City of Frankfurt am Main (*Stadt Frankfurt am Main*) |
+| Europe | Helsinki | Finland | City of Helsinki |
+| Europe | Lyon | France | City of Lyon (commune, 9 arrondissements) |
+| Europe | Marseille | France | City of Marseille (commune, 16 arrondissements) |
+| Europe | Paris | France | City of Paris (Ville de Paris, 20 arrondissements) |
+| Europe | Berlin | Germany | State of Berlin (Land Berlin) |
+| Europe | Cologne | Germany | City of Cologne (kreisfreie Stadt Köln, 9 districts) |
+| Europe | Düsseldorf | Germany | City of Düsseldorf (kreisfreie Stadt, 10 districts) |
+| Europe | Frankfurt | Germany | City of Frankfurt am Main (Stadt Frankfurt am Main) |
 | Europe | Hamburg | Germany | Free and Hanseatic City of Hamburg (mainland & Elbe, excluding offshore Neuwerk) |
-| Europe | Munich | Germany | City of Munich (*Stadt München*) |
+| Europe | Karlsruhe | Germany | City of Karlsruhe (Stadtkreis) |
+| Europe | Munich | Germany | City of Munich (Stadt München) |
+| Europe | Stuttgart | Germany | City of Stuttgart (Stadtkreis, 23 districts) |
 | Europe | Athens | Greece | Athens–Piraeus Urban Area (Central, North, South, West Athens & Piraeus Regional Units) |
-| Europe | Milan | Italy | Municipality of Milan (*Comune di Milano*) |
-| Europe | Rome | Italy | Municipality of Rome (*Roma Capitale*) |
-| Europe | Amsterdam | Netherlands | Municipality of Amsterdam (*Gemeente Amsterdam*) |
-| Europe | Warsaw | Poland | Capital City of Warsaw (*Miasto Stołeczne Warszawa*) |
-| Europe | Lisbon | Portugal | Municipality of Lisbon (*Município de Lisboa*) |
+| Europe | Budapest | Hungary | Budapest (capital city, 23 districts) |
+| Europe | Dublin | Ireland | Dublin City Council area |
+| Europe | Milan | Italy | Municipality of Milan (Comune di Milano) |
+| Europe | Rome | Italy | Municipality of Rome (Comune di Roma / Roma Capitale) |
+| Europe | Amsterdam | Netherlands | Municipality of Amsterdam (Gemeente Amsterdam) |
+| Europe | Oslo | Norway | Oslo municipality |
+| Europe | Warsaw | Poland | City of Warsaw (Miasto stołeczne Warszawa) |
+| Europe | Lisbon | Portugal | Municipality of Lisbon (Município de Lisboa) |
+| Europe | Kazan | Russia | Kazan city okrug |
 | Europe | Moscow | Russia | 9 urban administrative okrugs of Old Moscow (excluding rural New Moscow and Zelenograd exclave) |
-| Europe | Barcelona | Spain | Municipality of Barcelona (*Municipi de Barcelona*) |
-| Europe | Madrid | Spain | Municipality of Madrid (*Municipio de Madrid*) |
-| Europe | Stockholm | Sweden | City of Stockholm (*Stockholms kommun*) |
-| Europe | Zurich | Switzerland | City of Zurich (*Stadt Zürich*) |
+| Europe | Nizhny Novgorod | Russia | Nizhny Novgorod city okrug |
+| Europe | Novosibirsk | Russia | Novosibirsk city okrug |
+| Europe | Saint Petersburg | Russia | Federal city of Saint Petersburg (18 districts) |
+| Europe | Samara | Russia | Samara city okrug |
+| Europe | Yekaterinburg | Russia | Yekaterinburg city okrug |
+| Europe | Barcelona | Spain | Municipality of Barcelona (Municipi de Barcelona) |
+| Europe | Madrid | Spain | Municipality of Madrid (Municipio de Madrid) |
+| Europe | Stockholm | Sweden | City of Stockholm (Stockholms kommun) |
+| Europe | Zurich | Switzerland | City of Zurich (Stadt Zürich) |
 | Europe | Istanbul | Türkiye | 36 urban districts of Istanbul Province (excluding outlying rural Çatalca, Silivri, and Şile) |
-| Europe | London | United Kingdom | Greater London (32 boroughs + City of London) |
+| Europe | Birmingham | United Kingdom | City of Birmingham (metropolitan borough) |
+| Europe | Bristol | United Kingdom | City of Bristol (unitary authority) |
+| Europe | Edinburgh | United Kingdom | City of Edinburgh council area |
+| Europe | Glasgow | United Kingdom | Glasgow City council area |
+| Europe | Leeds | United Kingdom | City of Leeds (metropolitan borough) |
+| Europe | Liverpool | United Kingdom | City of Liverpool (metropolitan borough) |
+| Europe | London | United Kingdom | Greater London (32 boroughs and City of London) |
+| Europe | Manchester | United Kingdom | City of Manchester (metropolitan borough) |
 | Asia | Baku | Azerbaijan | City of Baku urban core (excludes rural Absheron Peninsula settlements) |
 | Asia | Beijing | China | 6 central urban districts (Dongcheng, Xicheng, Chaoyang, Haidian, Fengtai, Shijingshan) |
-| Asia | Shanghai | China | 8 central urban districts (Huangpu, Xuhui, Changning, Jing'an, Putuo, Hongkou, Yangpu, Pudong New Area; land-only subdistricts) |
+| Asia | Chengdu | China | 5 central districts (Chenghua, Jinjiang, Jinniu, Qingyang, Wuhou) |
+| Asia | Guangzhou | China | 6 central districts (Baiyun, Haizhu, Huangpu, Liwan, Tianhe, Yuexiu) |
+| Asia | Shanghai | China | 8 central urban districts (Huangpu, Xuhui, Changning, Jing'an, Putuo, Hongkou, Yangpu, Pudong New Area) |
+| Asia | Shenzhen | China | City of Shenzhen (all districts) |
 | Asia | Tbilisi | Georgia | City of Tbilisi (Tbilisi Municipality) |
-| Asia | Hong Kong | Hong Kong | Hong Kong Special Administrative Region (all 18 districts) |
+| Asia | Hong Kong | Hong Kong | Hong Kong Special Administrative Region |
+| Asia | Bengaluru | India | Bengaluru city (BBMP area) |
+| Asia | Chennai | India | Greater Chennai Corporation |
 | Asia | Delhi | India | National Capital Territory of Delhi (NCT Delhi) |
+| Asia | Mumbai | India | Greater Mumbai (Mumbai City + Mumbai Suburban districts) |
+| Asia | Jakarta | Indonesia | Special Region of Jakarta, mainland (excludes the Thousand Islands) |
+| Asia | Tehran | Iran | City of Tehran (municipality, 22 districts) |
+| Asia | Baghdad | Iraq | Baghdad city (Amanat Baghdad) |
+| Asia | Tel Aviv | Israel | Tel Aviv-Yafo municipality |
+| Asia | Fukuoka | Japan | City of Fukuoka (7 wards) |
+| Asia | Hiroshima | Japan | City of Hiroshima (8 wards) |
+| Asia | Kawasaki | Japan | City of Kawasaki (7 wards) |
+| Asia | Kobe | Japan | City of Kobe (9 wards) |
+| Asia | Kyoto | Japan | City of Kyoto (11 wards) |
+| Asia | Nagoya | Japan | City of Nagoya (16 wards) |
 | Asia | Osaka | Japan | City of Osaka (24 wards) |
-| Asia | Tokyo | Japan | Tokyo 23 Special Wards (*Tokubetsu-ku*) |
+| Asia | Sapporo | Japan | City of Sapporo (10 wards) |
+| Asia | Sendai | Japan | City of Sendai (5 wards) |
+| Asia | Tokyo | Japan | Tokyo 23 Special Wards (Tokubetsu-ku) |
+| Asia | Yokohama | Japan | City of Yokohama (18 wards) |
 | Asia | Almaty | Kazakhstan | City of Almaty (City of Republican Significance) |
 | Asia | Astana | Kazakhstan | City of Astana (City of Republican Significance) |
 | Asia | Shymkent | Kazakhstan | City of Shymkent (City of Republican Significance) |
-| Asia | Singapore | Singapore | Republic of Singapore (main island & inhabited coastal islands) |
+| Asia | Kuala Lumpur | Malaysia | Federal Territory of Kuala Lumpur |
+| Asia | Manila | Philippines | Metro Manila (National Capital Region, 16 cities + Pateros) |
+| Asia | Doha | Qatar | Doha municipality (baladiya) |
+| Asia | Riyadh | Saudi Arabia | Riyadh Governorate |
+| Asia | Singapore | Singapore | Republic of Singapore |
 | Asia | Seoul | South Korea | Seoul Special City |
 | Asia | Taipei | Taiwan | Taipei City (12 districts) |
+| Asia | Bangkok | Thailand | Bangkok Metropolitan Administration (50 districts) |
+| Asia | Adana | Türkiye | 4 central urban districts (Çukurova, Sarıçam, Seyhan, Yüreğir) |
 | Asia | Ankara | Türkiye | 8 central urban districts (Altındağ, Çankaya, Etimesgut, Keçiören, Mamak, Pursaklar, Sincan, Yenimahalle) |
+| Asia | Antalya | Türkiye | 5 central urban districts (Aksu, Döşemealtı, Kepez, Konyaaltı, Muratpaşa) |
 | Asia | Bursa | Türkiye | 3 central urban districts (Nilüfer, Osmangazi, Yıldırım) |
+| Asia | Denizli | Türkiye | 2 central urban districts (Merkezefendi, Pamukkale) |
+| Asia | Diyarbakır | Türkiye | 4 central urban districts (Bağlar, Kayapınar, Sur, Yenişehir) |
 | Asia | Eskişehir | Türkiye | 2 central urban districts (Odunpazarı, Tepebaşı) |
+| Asia | Gaziantep | Türkiye | 2 central urban districts (Şahinbey, Şehitkamil) |
 | Asia | Kayseri | Türkiye | 3 central urban districts (Kocasinan, Melikgazi, Talas) |
+| Asia | Kocaeli (İzmit) | Türkiye | İzmit urban area: 5 districts (Başiskele, Derince, İzmit, Kartepe, Körfez) |
 | Asia | Konya | Türkiye | 3 central urban districts (Karatay, Meram, Selçuklu) |
+| Asia | Mersin | Türkiye | 4 central urban districts (Akdeniz, Mezitli, Toroslar, Yenişehir) |
+| Asia | Samsun | Türkiye | 4 central urban districts (Atakum, Canik, İlkadım, Tekkeköy) |
+| Asia | Tekirdağ | Türkiye | Süleymanpaşa district (Tekirdağ city) |
+| Asia | Trabzon | Türkiye | Ortahisar district (Trabzon city) |
+| Asia | Yozgat | Türkiye | Yozgat Merkez (central) district |
 | Asia | İzmir | Türkiye | 11 central urban districts (Balçova, Bayraklı, Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, Konak, Narlıdere) |
+| Asia | Şanlıurfa | Türkiye | 3 central urban districts (Eyyübiye, Haliliye, Karaköprü) |
 | Asia | Dubai | United Arab Emirates | Emirate of Dubai (urban & coastal territory, excluding inland Hatta exclave) |
+| Africa | Algiers | Algeria | Algiers Province (wilaya) |
+| Africa | Luanda | Angola | Luanda Province clipped to the urban area |
+| Africa | Abidjan | Côte d'Ivoire | Autonomous District of Abidjan |
+| Africa | Kinshasa | DR Congo | Kinshasa province clipped to the urban west (excludes the rural east of the province) |
+| Africa | Alexandria | Egypt | Alexandria Governorate |
+| Africa | Cairo | Egypt | Cairo Governorate |
+| Africa | Addis Ababa | Ethiopia | Addis Ababa chartered city |
+| Africa | Accra | Ghana | Greater Accra Region clipped to the Accra–Tema urban area (excludes rural Ada in the east) |
+| Africa | Nairobi | Kenya | Nairobi County |
+| Africa | Casablanca | Morocco | Prefecture of Casablanca |
+| Africa | Lagos | Nigeria | Lagos State clipped to the metropolitan area (excludes rural Epe and Ibeju-Lekki in the east) |
+| Africa | Dakar | Senegal | Dakar Region (Dakar, Pikine, Guédiawaye, Rufisque, Keur Massar) |
+| Africa | Cape Town | South Africa | City of Cape Town Metropolitan Municipality |
+| Africa | Johannesburg | South Africa | City of Johannesburg Metropolitan Municipality |
+| Africa | Dar es Salaam | Tanzania | Dar es Salaam Region |
+| Africa | Tunis | Tunisia | Tunis Governorate |
 | North America | Edmonton | Canada | City of Edmonton |
 | North America | Montreal | Canada | Agglomeration of Montreal (Island of Montreal, including enclave municipalities) |
 | North America | Ottawa | Canada | City of Ottawa |
 | North America | Toronto | Canada | City of Toronto |
 | North America | Vancouver | Canada | City of Vancouver |
-| North America | Mexico City | Mexico | Mexico City (*Ciudad de México*, 16 alcaldías) |
+| North America | Guadalajara | Mexico | Municipality of Guadalajara |
+| North America | Mexico City | Mexico | Mexico City (Ciudad de México, 16 alcaldías) |
+| North America | Monterrey | Mexico | Municipality of Monterrey |
+| North America | Atlanta | United States | City of Atlanta |
 | North America | Boston | United States | City of Boston |
 | North America | Chicago | United States | City of Chicago |
+| North America | Denver | United States | City and County of Denver |
 | North America | Houston | United States | City of Houston |
 | North America | Los Angeles | United States | City of Los Angeles |
 | North America | Miami | United States | City of Miami |
-| North America | New York | United States | New York City (5 boroughs) |
+| North America | New York | United States | New York City (5 boroughs: Manhattan, Brooklyn, Queens, The Bronx, Staten Island) |
 | North America | Philadelphia | United States | City and County of Philadelphia |
 | North America | San Francisco | United States | City and County of San Francisco (mainland & bay islands, excluding Farallon Islands) |
 | North America | Seattle | United States | City of Seattle |
 | North America | Washington DC | United States | District of Columbia |
 | South America | Buenos Aires | Argentina | Autonomous City of Buenos Aires (CABA) |
-| South America | Rio de Janeiro | Brazil | Municipality of Rio de Janeiro (*Município do Rio de Janeiro*) |
-| South America | São Paulo | Brazil | Municipality of São Paulo (*Município de São Paulo*) |
+| South America | Rio de Janeiro | Brazil | Municipality of Rio de Janeiro (Município do Rio de Janeiro) |
+| South America | São Paulo | Brazil | Municipality of São Paulo (Município de São Paulo) |
 | South America | Santiago | Chile | Greater Santiago (32 contiguous urban comunas: Provincia de Santiago excl. mountain Lo Barnechea, plus Puente Alto) |
+| South America | Bogotá | Colombia | Bogotá urban area (Bogotá D.C. excluding the rural Sumapaz locality) |
+| South America | Medellín | Colombia | Medellín urban perimeter (16 comunas, excludes rural corregimientos) |
+| South America | Lima | Peru | Lima Province (Lima Metropolitana, 43 districts; excludes Callao) |
 | Oceania | Melbourne | Australia | 17 inner & middle metropolitan LGAs of Melbourne (City of Melbourne to Darebin, Boroondara, Monash, Bayside, Brimbank & Hobsons Bay) |
 | Oceania | Sydney | Australia | 19 inner & middle metropolitan LGAs of Sydney (City of Sydney to Parramatta, Ryde, Chatswood, Canterbury-Bankstown & Randwick) |
+| Oceania | Auckland | New Zealand | Auckland Council area clipped to the contiguous urban area (excludes rural north/south and the Hauraki Gulf islands) |
+
+### Data notes
+
+Population comes from GHSL GHS-POP R2023A (2025 epoch) inside each boundary. Where it differs from the official figure by more than ±15%, the coverage percentages are still internally consistent (both covered and total population come from the same grid), but the absolute numbers should be read with care:
+
+- **Satellite grid higher than official:** Bangkok (+126%, official figure counts registered residents only), Dar es Salaam (+69%), Bengaluru (+59%, 2011 census), Johannesburg (+36%), Nairobi (+35%), Alexandria (+27%), Addis Ababa (+22%), Mumbai (+22%, 2011 census), Luanda (+20%), Riyadh (+19%), Bogotá (+18%), Gaziantep (+15%).
+- **Satellite grid lower than official:** Adana (−59%; the grid counts only ~0.7M people in its four central districts), Yozgat (−38%; mostly rural district), Chengdu (−31%), Shenzhen (−27%; official figure includes a large non-hukou population), Kinshasa (−23%; no census since 1984), Mersin (−16%).
+- **Little or no urban rail** (coverage close to zero by design): Baghdad, Yozgat, Şanlıurfa, Trabzon, Shymkent, Tekirdağ, Denizli.
+- **Known station gap:** Bogotá's TransMilenio BRT stations are not picked up by the OSM station classifier, so Bogotá's coverage is understated.
+- **Thin OSM walking-path data** (coverage likely understated): Beijing, Shanghai, Guangzhou, Shenzhen, Chengdu, Mumbai, Chennai, Manila, Jakarta, Lagos, Kinshasa, Luanda, Nairobi, Abidjan, Accra. These cities show a warning in the app.
 
 ---
 
