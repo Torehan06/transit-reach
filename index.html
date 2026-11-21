@@ -6,7 +6,7 @@
     <title>Transit Reach — Walking Distance to Rail & Rapid Transit</title>
     <meta
       name="description"
-      content="Explore how much of 42 global cities—and how many residents—are within walking distance of metro, tram, commuter rail, BRT, ferry, and cable car stations."
+      content="Explore how much of 65 cities—and how many residents—are within walking distance of metro, tram, commuter rail, BRT, ferry, and cable car stations."
     />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f17'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%232dd4bf' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fbbf24'/%3E%3C/svg%3E" />
   </head>
@@ -16,13 +16,14 @@
 
       <!-- Mobile Top Bar -->
       <header class="mobile-topbar">
-        <button id="mobile-city-btn" class="mobile-city-pill" type="button" aria-label="Select city">
+        <label id="mobile-city-btn" class="mobile-city-pill">
           <span class="brand-dot"></span>
           <span id="mobile-city-name">Loading…</span>
           <svg class="chevron" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
           </svg>
-        </button>
+          <select id="mobile-city-select" class="pill-select" aria-label="Select city"></select>
+        </label>
         <div class="mobile-kpis">
           <span class="mini-kpi"><strong id="mobile-pop-pct">—</strong> pop</span>
           <span class="mini-kpi"><strong id="mobile-area-pct">—</strong> area</span>
@@ -36,7 +37,7 @@
 
       <!-- Main Control Panel (Left sidebar on desktop, bottom sheet on mobile) -->
       <aside id="control-panel" class="panel" aria-label="Controls">
-        <button id="sheet-handle" class="sheet-handle" type="button" aria-label="Expand or collapse controls">
+        <button id="sheet-handle" class="sheet-handle" type="button" aria-label="Expand or collapse controls" aria-expanded="false">
           <span class="handle-bar"></span>
         </button>
 

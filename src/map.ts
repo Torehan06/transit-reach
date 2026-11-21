@@ -381,7 +381,16 @@ export class TransitMap {
     const isDesktop = w >= 768;
     const padding = isDesktop
       ? { top: 48, bottom: 72, left: Math.min(396, Math.floor(w * 0.4)), right: 56 }
-      : { top: 68, bottom: Math.min(185, Math.floor(h * 0.3)), left: 20, right: 20 };
+      : {
+          top: 68,
+          // Leave room for the bottom sheet (peek height, via --sheet-h) plus the legend.
+          bottom: Math.min(
+            Math.floor(h * 0.45),
+            (parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sheet-h')) || 150) + 64
+          ),
+          left: 20,
+          right: 20,
+        };
 
     this.map.fitBounds(
       [

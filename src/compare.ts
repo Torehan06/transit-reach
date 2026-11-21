@@ -4,6 +4,7 @@ import {
   formatCompactPop,
   formatDistance,
 } from './stats';
+import { CONTINENTS, continentOf, fillCitySelect } from './regions';
 import { AppState, CitySummary, CoverageStats, MODES, SummaryManifest } from './types';
 
 type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'stations' | 'name';
@@ -78,7 +79,8 @@ export class CompareModal {
     this.cityB = cities[Math.min(1, cities.length - 1)].id;
 
     // Region filter pills
-    const regions = ['All', ...Array.from(new Set(cities.map((c) => c.region)))];
+    const present = new Set(cities.map((c) => continentOf(c)));
+    const regions = ['All', ...CONTINENTS.filter((c) => present.has(c))];
     this.regionFilters.innerHTML = '';
     for (const r of regions) {
       const btn = document.createElement('button');
@@ -97,24 +99,7 @@ export class CompareModal {
   }
 
   private populateSelect(sel: HTMLSelectElement, cities: CitySummary[]): void {
-    sel.innerHTML = '';
-    const byRegion = new Map<string, CitySummary[]>();
-    for (const c of cities) {
-      const list = byRegion.get(c.region) ?? [];
-      list.push(c);
-      byRegion.set(c.region, list);
-    }
-    for (const [region, list] of byRegion) {
-      const group = document.createElement('optgroup');
-      group.label = region;
-      for (const c of list) {
-        const opt = document.createElement('option');
-        opt.value = c.id;
-        opt.textContent = c.name;
-        group.appendChild(opt);
-      }
-      sel.appendChild(group);
-    }
+    fillCitySelect(sel, cities);
   }
 
   public open(state: AppState): void {
@@ -218,7 +203,7 @@ export class CompareModal {
     if (!this.manifest || !this.state) return;
 
     const rows: RowData[] = Object.values(this.manifest.cities)
-      .filter((c) => this.activeRegion === 'All' || c.region === this.activeRegion)
+      .filter((c) => this.activeRegion === 'All' || continentOf(c) === this.activeRegion)
       .map((city) => ({
         city,
         stats: computeCityCoverage(

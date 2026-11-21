@@ -1150,55 +1150,95 @@ body,
     top: 58px !important;
   }
 
+  /* Bottom sheet: height is driven by src/sheet.ts (peek / half / full snap points). */
   .panel {
     top: auto;
     left: 0;
     right: 0;
     bottom: 0;
     width: 100%;
-    max-height: 82dvh;
+    height: var(--sheet-h, 150px);
+    max-height: 92dvh;
     border-radius: 18px 18px 0 0;
     border-left: none;
     border-right: none;
     border-bottom: none;
-    padding: 6px 14px max(12px, env(safe-area-inset-bottom));
-    gap: 10px;
-    transition: max-height 0.22s ease;
+    padding: 0 14px max(12px, env(safe-area-inset-bottom));
+    gap: 12px;
+    overflow-y: hidden;
+    overscroll-behavior: contain;
+    transition: height 0.24s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
+
+  .panel.sheet-dragging {
+    transition: none;
+  }
+
+  .panel.sheet-scrollable {
+    overflow-y: auto;
+  }
+
+  /* Mobile order: handle, slider, coverage numbers, city notes, modes and layers. */
+  .panel > .sheet-handle { order: 0; }
+  .panel > .slider-section { order: 1; }
+  .panel > .kpi-grid { order: 2; }
+  .panel > .panel-header { order: 3; }
+  .panel > .panel-collapsible { order: 4; }
 
   .sheet-handle {
     display: flex;
     justify-content: center;
-    padding: 6px 0 2px;
-    background: none;
+    align-items: center;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    flex-shrink: 0;
+    height: 26px;
+    margin: 0 -14px -6px;
+    padding: 0;
+    background: inherit;
     border: none;
-    width: 100%;
-    cursor: pointer;
+    width: calc(100% + 28px);
+    cursor: grab;
+    touch-action: none;
   }
 
   .handle-bar {
-    width: 38px;
-    height: 4px;
+    width: 40px;
+    height: 5px;
     border-radius: 999px;
-    background: rgba(148, 163, 184, 0.42);
+    background: rgba(148, 163, 184, 0.5);
   }
 
-  .panel:not(.expanded) .panel-header,
-  .panel:not(.expanded) .kpi-grid,
-  .panel:not(.expanded) .panel-collapsible {
-    display: none;
-  }
-
-  .panel.expanded .panel-header {
-    display: block;
-  }
-
-  .panel-header .brand-row {
-    display: none;
-  }
-
+  /* The city is picked from the top pill on mobile; no second selector in the sheet. */
+  .panel-header .brand-row,
   .panel-header .city-select-wrap {
+    display: none;
+  }
+
+  .panel-header .boundary-note {
     margin-top: 0;
+  }
+
+  .mobile-city-pill {
+    position: relative;
+  }
+
+  html:not([data-sheet='peek']) .map-legend {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .pill-select {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    font-size: 16px; /* stops iOS from zooming in when the picker opens */
+    cursor: pointer;
+    -webkit-appearance: none;
+    appearance: none;
   }
 
   .inspect-card {
@@ -1211,7 +1251,8 @@ body,
   .map-legend {
     left: 10px;
     right: 10px;
-    bottom: 122px;
+    bottom: calc(var(--sheet-h, 150px) + 8px);
+    transition: bottom 0.24s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.15s ease;
     padding: 5px 9px;
     font-size: 0.65rem;
     flex-direction: column;

@@ -2,6 +2,8 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 import './style.css';
 
 import { CompareModal } from './compare';
+import { cityLabel, fillCitySelect } from './regions';
+import { BottomSheet } from './sheet';
 import { InspectResult, TransitMap } from './map';
 import {
   DEFAULT_DISTANCE_M,
@@ -52,6 +54,7 @@ const kpiAreaBar = document.getElementById('kpi-area-bar')!;
 const kpiAreaSub = document.getElementById('kpi-area-sub')!;
 
 const mobileCityName = document.getElementById('mobile-city-name')!;
+const mobileCitySelect = document.getElementById('mobile-city-select') as HTMLSelectElement;
 const mobilePopPct = document.getElementById('mobile-pop-pct')!;
 const mobileAreaPct = document.getElementById('mobile-area-pct')!;
 
@@ -76,6 +79,11 @@ const inspectDist = document.getElementById('inspect-dist')!;
 const inspectBody = document.getElementById('inspect-body')!;
 
 const controlPanel = document.getElementById('control-panel')!;
+const sheet = new BottomSheet(
+  controlPanel,
+  document.getElementById('sheet-handle')!,
+  document.querySelector('.slider-section') as HTMLElement
+);
 
 function currentCity(): CitySummary {
   return manifest.cities[state.cityId];
@@ -112,25 +120,8 @@ function syncHashState(): void {
 
 function populateCitySelector(): void {
   const cities = Object.values(manifest.cities);
-  const byRegion = new Map<string, CitySummary[]>();
-  for (const c of cities) {
-    const arr = byRegion.get(c.region) ?? [];
-    arr.push(c);
-    byRegion.set(c.region, arr);
-  }
-
-  citySelect.innerHTML = '';
-  for (const [region, list] of byRegion) {
-    const group = document.createElement('optgroup');
-    group.label = region;
-    for (const c of list) {
-      const opt = document.createElement('option');
-      opt.value = c.id;
-      opt.textContent = `${c.name} (${c.country})`;
-      group.appendChild(opt);
-    }
-    citySelect.appendChild(group);
-  }
+  fillCitySelect(citySelect, cities);
+  fillCitySelect(mobileCitySelect, cities);
 }
 
 function renderModeToggles(): void {
@@ -343,7 +334,9 @@ async function selectCity(cityId: string): Promise<void> {
   const city = currentCity();
 
   citySelect.value = cityId;
+  mobileCitySelect.value = cityId;
   mobileCityName.textContent = city.name;
+  mobileCitySelect.setAttribute('aria-label', `City: ${cityLabel(city)}`);
   boundaryNoteEl.textContent = city.boundary_desc;
   if (city.data_warning) {
     dataWarningEl.textContent = city.data_warning;
@@ -354,6 +347,7 @@ async function selectCity(cityId: string): Promise<void> {
   }
   renderModeToggles();
   updateCoverageKPIs();
+  sheet.snapTo(sheet.current, false); // content height may have changed
   syncHashState();
 
   loadingPill.classList.remove('hidden');
@@ -377,7 +371,10 @@ async function selectCity(cityId: string): Promise<void> {
 function bindEvents(): void {
   citySelect.addEventListener('change', () => {
     selectCity(citySelect.value);
-    controlPanel.classList.remove('expanded');
+  });
+  mobileCitySelect.addEventListener('change', () => {
+    selectCity(mobileCitySelect.value);
+    sheet.snapTo('peek');
   });
 
   distanceSlider.addEventListener('input', () => {
@@ -422,14 +419,6 @@ function bindEvents(): void {
   document.getElementById('compare-btn')?.addEventListener('click', openCompare);
   document.getElementById('mobile-compare-btn')?.addEventListener('click', openCompare);
 
-  // Mobile sheet toggle
-  document.getElementById('sheet-handle')?.addEventListener('click', () => {
-    controlPanel.classList.toggle('expanded');
-  });
-  document.getElementById('mobile-city-btn')?.addEventListener('click', () => {
-    controlPanel.classList.add('expanded');
-    setTimeout(() => citySelect.focus(), 180);
-  });
 
   window.addEventListener('hashchange', () => {
     const prevCity = state.cityId;

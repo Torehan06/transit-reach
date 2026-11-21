@@ -5,7 +5,7 @@ Interactive static web app showing how much of each city—and how many of its r
 - **Street-network walking distance** (not straight-line circles) from 0 to 2 miles (0 to 3.22 km), with instant client-side slider updates and a `mi` / `km` toggle
 - **6 toggleable transit modes**: Metro / Subway, Tram / Light Rail, Commuter / Regional Rail, BRT, Ferry, and Funicular / Cable Car (with duplicate OSM station/platform nodes merged per mode)
 - **Zoom-adaptive population dot-density layer** built from GHSL GHS-POP 2025 (100 m equal-area grid), with fixed deterministic dot positions colored covered vs. uncovered and live people-per-dot scaling (`500` → `250` → `125` → `25` people/dot)
-- **Side-by-side & ranked comparison** across comparable city-proper boundaries and 8 world regions for any combination of distance and transit modes
+- **Side-by-side & ranked comparison** across comparable city-proper boundaries grouped into 5 continents, for any combination of distance and transit modes
 - **Tap or click anywhere** inside a city to inspect walking distance to the nearest station and highlight it on the map
 
 ---
@@ -98,75 +98,75 @@ rm -f /tmp/transit-reach-data.tar
 
 ## City Boundaries (All 65 Cities)
 
-Comparable "the city itself" administrative boundaries are used across all 8 regions. In Türkiye, metropolitan municipalities span entire mostly-rural provinces, so the central urban districts (*merkez ilçeler*) are used instead; analogous urban-core district groupings are used for Shanghai, Beijing, Moscow, Athens, Baku, Santiago, Sydney, and Melbourne.
+Comparable "the city itself" administrative boundaries are used across all 65 cities. In Türkiye, metropolitan municipalities span entire mostly-rural provinces, so the central urban districts (*merkez ilçeler*) are used instead; analogous urban-core district groupings are used for Shanghai, Beijing, Moscow, Athens, Baku, Santiago, Sydney, and Melbourne.
 
-| Region | City | Country | Boundary Chosen |
+| Continent | City | Country | Boundary Chosen |
 | --- | --- | --- | --- |
-| Türkiye | Ankara | Türkiye | 8 central urban districts (Altındağ, Çankaya, Etimesgut, Keçiören, Mamak, Pursaklar, Sincan, Yenimahalle) |
-| Türkiye | Istanbul | Türkiye | 36 urban districts of Istanbul Province (excluding outlying rural Çatalca, Silivri, and Şile) |
-| Türkiye | İzmir | Türkiye | 11 central urban districts (Balçova, Bayraklı, Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, Konak, Narlıdere) |
-| Türkiye | Bursa | Türkiye | 3 central urban districts (Nilüfer, Osmangazi, Yıldırım) |
-| Türkiye | Eskişehir | Türkiye | 2 central urban districts (Odunpazarı, Tepebaşı) |
-| Türkiye | Konya | Türkiye | 3 central urban districts (Karatay, Meram, Selçuklu) |
-| Türkiye | Kayseri | Türkiye | 3 central urban districts (Kocasinan, Melikgazi, Talas) |
-| Central Asia & Caucasus | Almaty | Kazakhstan | City of Almaty (City of Republican Significance) |
-| Central Asia & Caucasus | Astana | Kazakhstan | City of Astana (City of Republican Significance) |
-| Central Asia & Caucasus | Shymkent | Kazakhstan | City of Shymkent (City of Republican Significance) |
-| Central Asia & Caucasus | Tbilisi | Georgia | City of Tbilisi (Tbilisi Municipality) |
-| Central Asia & Caucasus | Baku | Azerbaijan | City of Baku urban core (excludes rural Absheron Peninsula settlements) |
-| Europe | Amsterdam | Netherlands | Municipality of Amsterdam (*Gemeente Amsterdam*) |
-| Europe | London | United Kingdom | Greater London (32 boroughs + City of London) |
-| Europe | Paris | France | City of Paris (*Ville de Paris*, 20 arrondissements) |
-| Europe | Brussels | Belgium | Brussels-Capital Region (19 municipalities) |
-| Europe | Berlin | Germany | State of Berlin (*Land Berlin*) |
-| Europe | Munich | Germany | City of Munich (*Stadt München*) |
-| Europe | Hamburg | Germany | Free and Hanseatic City of Hamburg (mainland & Elbe, excluding offshore Neuwerk) |
-| Europe | Frankfurt | Germany | City of Frankfurt am Main (*Stadt Frankfurt am Main*) |
 | Europe | Vienna | Austria | City and State of Vienna (*Stadt Wien*, 23 districts) |
-| Europe | Zurich | Switzerland | City of Zurich (*Stadt Zürich*) |
-| Europe | Madrid | Spain | Municipality of Madrid (*Municipio de Madrid*) |
-| Europe | Barcelona | Spain | Municipality of Barcelona (*Municipi de Barcelona*) |
+| Europe | Brussels | Belgium | Brussels-Capital Region (19 municipalities) |
+| Europe | Prague | Czechia | Capital City of Prague (*Hlavní město Praha*) |
 | Europe | Copenhagen | Denmark | Copenhagen and Frederiksberg municipalities (Frederiksberg enclave included) |
-| Europe | Stockholm | Sweden | City of Stockholm (*Stockholms kommun*) |
+| Europe | Paris | France | City of Paris (*Ville de Paris*, 20 arrondissements) |
+| Europe | Berlin | Germany | State of Berlin (*Land Berlin*) |
+| Europe | Frankfurt | Germany | City of Frankfurt am Main (*Stadt Frankfurt am Main*) |
+| Europe | Hamburg | Germany | Free and Hanseatic City of Hamburg (mainland & Elbe, excluding offshore Neuwerk) |
+| Europe | Munich | Germany | City of Munich (*Stadt München*) |
+| Europe | Athens | Greece | Athens–Piraeus Urban Area (Central, North, South, West Athens & Piraeus Regional Units) |
 | Europe | Milan | Italy | Municipality of Milan (*Comune di Milano*) |
 | Europe | Rome | Italy | Municipality of Rome (*Roma Capitale*) |
-| Europe | Prague | Czechia | Capital City of Prague (*Hlavní město Praha*) |
+| Europe | Amsterdam | Netherlands | Municipality of Amsterdam (*Gemeente Amsterdam*) |
 | Europe | Warsaw | Poland | Capital City of Warsaw (*Miasto Stołeczne Warszawa*) |
 | Europe | Lisbon | Portugal | Municipality of Lisbon (*Município de Lisboa*) |
-| Europe | Athens | Greece | Athens–Piraeus Urban Area (Central, North, South, West Athens & Piraeus Regional Units) |
 | Europe | Moscow | Russia | 9 urban administrative okrugs of Old Moscow (excluding rural New Moscow and Zelenograd exclave) |
-| North America | New York | United States | New York City (5 boroughs) |
-| North America | Chicago | United States | City of Chicago |
+| Europe | Barcelona | Spain | Municipality of Barcelona (*Municipi de Barcelona*) |
+| Europe | Madrid | Spain | Municipality of Madrid (*Municipio de Madrid*) |
+| Europe | Stockholm | Sweden | City of Stockholm (*Stockholms kommun*) |
+| Europe | Zurich | Switzerland | City of Zurich (*Stadt Zürich*) |
+| Europe | Istanbul | Türkiye | 36 urban districts of Istanbul Province (excluding outlying rural Çatalca, Silivri, and Şile) |
+| Europe | London | United Kingdom | Greater London (32 boroughs + City of London) |
+| Asia | Baku | Azerbaijan | City of Baku urban core (excludes rural Absheron Peninsula settlements) |
+| Asia | Beijing | China | 6 central urban districts (Dongcheng, Xicheng, Chaoyang, Haidian, Fengtai, Shijingshan) |
+| Asia | Shanghai | China | 8 central urban districts (Huangpu, Xuhui, Changning, Jing'an, Putuo, Hongkou, Yangpu, Pudong New Area; land-only subdistricts) |
+| Asia | Tbilisi | Georgia | City of Tbilisi (Tbilisi Municipality) |
+| Asia | Hong Kong | Hong Kong | Hong Kong Special Administrative Region (all 18 districts) |
+| Asia | Delhi | India | National Capital Territory of Delhi (NCT Delhi) |
+| Asia | Osaka | Japan | City of Osaka (24 wards) |
+| Asia | Tokyo | Japan | Tokyo 23 Special Wards (*Tokubetsu-ku*) |
+| Asia | Almaty | Kazakhstan | City of Almaty (City of Republican Significance) |
+| Asia | Astana | Kazakhstan | City of Astana (City of Republican Significance) |
+| Asia | Shymkent | Kazakhstan | City of Shymkent (City of Republican Significance) |
+| Asia | Singapore | Singapore | Republic of Singapore (main island & inhabited coastal islands) |
+| Asia | Seoul | South Korea | Seoul Special City |
+| Asia | Taipei | Taiwan | Taipei City (12 districts) |
+| Asia | Ankara | Türkiye | 8 central urban districts (Altındağ, Çankaya, Etimesgut, Keçiören, Mamak, Pursaklar, Sincan, Yenimahalle) |
+| Asia | Bursa | Türkiye | 3 central urban districts (Nilüfer, Osmangazi, Yıldırım) |
+| Asia | Eskişehir | Türkiye | 2 central urban districts (Odunpazarı, Tepebaşı) |
+| Asia | Kayseri | Türkiye | 3 central urban districts (Kocasinan, Melikgazi, Talas) |
+| Asia | Konya | Türkiye | 3 central urban districts (Karatay, Meram, Selçuklu) |
+| Asia | İzmir | Türkiye | 11 central urban districts (Balçova, Bayraklı, Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, Konak, Narlıdere) |
+| Asia | Dubai | United Arab Emirates | Emirate of Dubai (urban & coastal territory, excluding inland Hatta exclave) |
+| North America | Edmonton | Canada | City of Edmonton |
+| North America | Montreal | Canada | Agglomeration of Montreal (Island of Montreal, including enclave municipalities) |
+| North America | Ottawa | Canada | City of Ottawa |
+| North America | Toronto | Canada | City of Toronto |
+| North America | Vancouver | Canada | City of Vancouver |
+| North America | Mexico City | Mexico | Mexico City (*Ciudad de México*, 16 alcaldías) |
 | North America | Boston | United States | City of Boston |
-| North America | Washington DC | United States | District of Columbia |
+| North America | Chicago | United States | City of Chicago |
+| North America | Houston | United States | City of Houston |
+| North America | Los Angeles | United States | City of Los Angeles |
+| North America | Miami | United States | City of Miami |
+| North America | New York | United States | New York City (5 boroughs) |
 | North America | Philadelphia | United States | City and County of Philadelphia |
 | North America | San Francisco | United States | City and County of San Francisco (mainland & bay islands, excluding Farallon Islands) |
 | North America | Seattle | United States | City of Seattle |
-| North America | Los Angeles | United States | City of Los Angeles |
-| North America | Miami | United States | City of Miami |
-| North America | Houston | United States | City of Houston |
-| North America | Toronto | Canada | City of Toronto |
-| North America | Montreal | Canada | Agglomeration of Montreal (Island of Montreal, including enclave municipalities) |
-| North America | Vancouver | Canada | City of Vancouver |
-| North America | Ottawa | Canada | City of Ottawa |
-| North America | Edmonton | Canada | City of Edmonton |
-| Latin America | Mexico City | Mexico | Mexico City (*Ciudad de México*, 16 alcaldías) |
-| Latin America | São Paulo | Brazil | Municipality of São Paulo (*Município de São Paulo*) |
-| Latin America | Rio de Janeiro | Brazil | Municipality of Rio de Janeiro (*Município do Rio de Janeiro*) |
-| Latin America | Buenos Aires | Argentina | Autonomous City of Buenos Aires (CABA) |
-| Latin America | Santiago | Chile | Greater Santiago (32 contiguous urban comunas: Provincia de Santiago excl. mountain Lo Barnechea, plus Puente Alto) |
-| Middle East | Dubai | United Arab Emirates | Emirate of Dubai (urban & coastal territory, excluding inland Hatta exclave) |
-| Asia | Tokyo | Japan | Tokyo 23 Special Wards (*Tokubetsu-ku*) |
-| Asia | Osaka | Japan | City of Osaka (24 wards) |
-| Asia | Seoul | South Korea | Seoul Special City |
-| Asia | Taipei | Taiwan | Taipei City (12 districts) |
-| Asia | Singapore | Singapore | Republic of Singapore (main island & inhabited coastal islands) |
-| Asia | Hong Kong | Hong Kong | Hong Kong Special Administrative Region (all 18 districts) |
-| Asia | Shanghai | China | 8 central urban districts (Huangpu, Xuhui, Changning, Jing'an, Putuo, Hongkou, Yangpu, Pudong New Area; land-only subdistricts) |
-| Asia | Beijing | China | 6 central urban districts (Dongcheng, Xicheng, Chaoyang, Haidian, Fengtai, Shijingshan) |
-| Asia | Delhi | India | National Capital Territory of Delhi (NCT Delhi) |
-| Oceania | Sydney | Australia | 19 inner & middle metropolitan LGAs of Sydney (City of Sydney to Parramatta, Ryde, Chatswood, Canterbury-Bankstown & Randwick) |
+| North America | Washington DC | United States | District of Columbia |
+| South America | Buenos Aires | Argentina | Autonomous City of Buenos Aires (CABA) |
+| South America | Rio de Janeiro | Brazil | Municipality of Rio de Janeiro (*Município do Rio de Janeiro*) |
+| South America | São Paulo | Brazil | Municipality of São Paulo (*Município de São Paulo*) |
+| South America | Santiago | Chile | Greater Santiago (32 contiguous urban comunas: Provincia de Santiago excl. mountain Lo Barnechea, plus Puente Alto) |
 | Oceania | Melbourne | Australia | 17 inner & middle metropolitan LGAs of Melbourne (City of Melbourne to Darebin, Boroondara, Monash, Bayside, Brimbank & Hobsons Bay) |
+| Oceania | Sydney | Australia | 19 inner & middle metropolitan LGAs of Sydney (City of Sydney to Parramatta, Ryde, Chatswood, Canterbury-Bankstown & Randwick) |
 
 ---
 
