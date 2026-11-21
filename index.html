@@ -6,7 +6,7 @@
     <title>Transit Reach — Walking Distance to Rail & Rapid Transit</title>
     <meta
       name="description"
-      content="Explore how much of 65 cities—and how many residents—are within walking distance of metro, tram, commuter rail, BRT, ferry, and cable car stations."
+      content="Explore how much of 148 cities—and how many residents—are within walking distance of metro, tram, commuter rail, BRT, ferry, and cable car stations."
     />
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230b0f17'/%3E%3Ccircle cx='16' cy='16' r='10' fill='none' stroke='%232dd4bf' stroke-width='2.5'/%3E%3Ccircle cx='16' cy='16' r='4' fill='%23fbbf24'/%3E%3C/svg%3E" />
   </head>
@@ -113,6 +113,23 @@
 
         <!-- Collapsible Body on Mobile -->
         <div class="panel-collapsible">
+          <!-- Reach curve -->
+          <section class="control-section reach-section" id="reach-section">
+            <div class="section-row">
+              <span class="section-label">Reach curve</span>
+              <div class="seg-toggle" role="group" aria-label="Reach curve view">
+                <button type="button" class="seg-btn active" data-reach-view="cities">Cities</button>
+                <button type="button" class="seg-btn" data-reach-view="modes">By mode</button>
+              </div>
+            </div>
+            <div id="reach-chart" class="reach-chart" title="Tap or drag to set the walking distance"></div>
+            <div id="reach-legend" class="reach-legend"></div>
+            <div id="reach-overlay-row" class="reach-overlay-row">
+              <select id="reach-add-city" class="mini-select" aria-label="Add a city to compare"></select>
+            </div>
+            <p id="reach-insight" class="reach-insight"></p>
+          </section>
+
           <!-- Mode Toggles -->
           <section class="control-section">
             <div class="section-row">
@@ -146,9 +163,40 @@
             </label>
           </section>
 
+          <!-- Biggest gaps -->
+          <section class="control-section gaps-section">
+            <div class="section-row">
+              <span class="section-label">Biggest gaps</span>
+              <button id="gaps-btn" class="text-btn" type="button">Find in view</button>
+            </div>
+            <div id="gaps-list" class="gaps-list"><p class="gaps-empty">The largest clusters of people beyond the walking distance, in the area on screen.</p></div>
+          </section>
+
           <p class="inspect-hint">Tap anywhere inside the city boundary to see walking distance to the nearest station.</p>
         </div>
       </aside>
+
+      <!-- Sketch-a-line scenario -->
+      <button id="scenario-btn" class="scenario-btn" type="button" aria-label="Sketch a new line">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 15 L8 9 L12 12 L17 5"/><circle cx="3" cy="15" r="1.6" fill="currentColor"/><circle cx="17" cy="5" r="1.6" fill="currentColor"/></svg>
+        <span>Sketch a line</span>
+      </button>
+      <div id="scenario-card" class="scenario-card hidden" role="status" aria-live="polite">
+        <div class="scenario-top">
+          <span class="scenario-title">Sketch a line</span>
+          <div class="seg-toggle" role="group" aria-label="Station spacing">
+            <button type="button" class="seg-btn" data-spacing="400">400 m</button>
+            <button type="button" class="seg-btn active" data-spacing="800">800 m</button>
+            <button type="button" class="seg-btn" data-spacing="1600">1.6 km</button>
+          </div>
+        </div>
+        <div id="scenario-body" class="scenario-body"></div>
+        <div class="scenario-actions">
+          <button id="scenario-undo" class="text-btn" type="button">Undo</button>
+          <button id="scenario-clear" class="text-btn" type="button">Clear</button>
+          <button id="scenario-done" class="text-btn strong" type="button">Done</button>
+        </div>
+      </div>
 
       <!-- Floating Inspect Card -->
       <div id="inspect-card" class="inspect-card hidden" role="status" aria-live="polite">
@@ -204,6 +252,15 @@
               <div id="sbs-cards" class="sbs-cards"></div>
             </section>
 
+            <!-- Stations vs reach -->
+            <section class="scatter-section">
+              <div class="sbs-header">
+                <h3>Do more stations mean more reach?</h3>
+              </div>
+              <div id="scatter-chart" class="scatter-chart"></div>
+              <p id="scatter-caption" class="scatter-caption"></p>
+            </section>
+
             <!-- Ranked Table -->
             <section class="table-section">
               <div class="table-controls">
@@ -214,6 +271,7 @@
                     <option value="popPct">Sort: Population %</option>
                     <option value="areaPct">Sort: Area %</option>
                     <option value="coveredPop">Sort: Covered People</option>
+                    <option value="closeIn">Sort: Close-in share</option>
                     <option value="stations">Sort: Total Stations</option>
                     <option value="name">Sort: City Name</option>
                   </select>
@@ -227,6 +285,7 @@
                       <th>City</th>
                       <th>Pop covered</th>
                       <th>Area covered</th>
+                      <th title="Coverage at ½ mile ÷ coverage at 1 mile: how much of the city's reach is a short walk">Close-in</th>
                       <th>Stations</th>
                     </tr>
                   </thead>

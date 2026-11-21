@@ -5,13 +5,16 @@ import {
   formatDistance,
 } from './stats';
 import { CONTINENTS, continentOf, fillCitySelect } from './regions';
+import { closeInShare } from './reach';
+import { renderScatter } from './scatter';
 import { AppState, CitySummary, CoverageStats, MODES, SummaryManifest } from './types';
 
-type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'stations' | 'name';
+type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'closeIn' | 'stations' | 'name';
 
 interface RowData {
   city: CitySummary;
   stats: CoverageStats;
+  closeIn: number | null;
 }
 
 export class CompareModal {
@@ -139,6 +142,16 @@ export class CompareModal {
 
     this.subtitleEl.textContent = `Within ${formatDistance(this.state.distanceM, this.state.unit)} walk · ${modesText}`;
     this.renderSideBySide();
+    renderScatter(
+      document.getElementById('scatter-chart')!,
+      document.getElementById('scatter-caption')!,
+      this.manifest,
+      this.state,
+      (cid) => {
+        this.onSelectCity(cid);
+        this.close();
+      }
+    );
     this.renderTable();
   }
 
@@ -212,6 +225,7 @@ export class CompareModal {
           this.state!.distanceM,
           this.manifest!.bucket_step_m
         ),
+        closeIn: closeInShare(city, this.state!.enabledModes, this.manifest!.bucket_step_m),
       }));
 
     rows.sort((a, b) => {
@@ -222,6 +236,8 @@ export class CompareModal {
           return b.stats.areaPct - a.stats.areaPct;
         case 'coveredPop':
           return b.stats.coveredPop - a.stats.coveredPop;
+        case 'closeIn':
+          return (b.closeIn ?? -1) - (a.closeIn ?? -1);
         case 'stations':
           return b.stats.activeStations - a.stats.activeStations;
         case 'name':
@@ -248,6 +264,7 @@ export class CompareModal {
           <div class="cell-pct">${row.stats.areaPct.toFixed(1)}%</div>
           <div class="mini-bar"><div class="mini-bar-fill area-fill" style="width:${Math.min(100, row.stats.areaPct)}%"></div></div>
         </td>
+        <td class="num-col">${row.closeIn === null ? '—' : row.closeIn.toFixed(0) + '%'}</td>
         <td class="num-col">${row.stats.activeStations}</td>
       `;
 

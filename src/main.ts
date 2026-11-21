@@ -3,6 +3,9 @@ import './style.css';
 
 import { CompareModal } from './compare';
 import { cityLabel, fillCitySelect } from './regions';
+import { ReachChart } from './reach';
+import { DETOUR_FACTOR, Scenario } from './scenario';
+import { findGaps, renderGaps } from './gaps';
 import { BottomSheet } from './sheet';
 import { InspectResult, TransitMap } from './map';
 import {
@@ -30,6 +33,8 @@ import {
 let manifest: SummaryManifest;
 let transitMap: TransitMap;
 let compareModal: CompareModal;
+let reachChart: ReachChart;
+let scenario: Scenario;
 const stationCache = new Map<string, StationRecord[]>();
 let lastInspect: InspectResult | null = null;
 
@@ -79,6 +84,7 @@ const inspectDist = document.getElementById('inspect-dist')!;
 const inspectBody = document.getElementById('inspect-body')!;
 
 const controlPanel = document.getElementById('control-panel')!;
+const gapsList = document.getElementById('gaps-list')!;
 const sheet = new BottomSheet(
   controlPanel,
   document.getElementById('sheet-handle')!,
@@ -108,13 +114,18 @@ function parseHashState(): void {
   if (u === 'mi' || u === 'km') {
     state.unit = u;
   }
+  const cmp = params.get('cmp');
+  pendingOverlays = cmp ? cmp.split('.').filter((id) => manifest.cities[id]).slice(0, 3) : [];
 }
+
+let pendingOverlays: string[] = [];
 
 function syncHashState(): void {
   const params = new URLSearchParams();
   params.set('city', state.cityId);
   params.set('d', String(state.distanceM));
   params.set('u', state.unit);
+  if (reachChart?.overlays.length) params.set('cmp', reachChart.overlays.join('.'));
   history.replaceState(null, '', `#${params.toString()}`);
 }
 
@@ -231,18 +242,22 @@ function renderInspectCard(res: InspectResult | null): void {
 
   const best = res.best;
   const meta = MODE_BY_CODE[best.mode];
+  // Beyond the precomputed network range only the straight-line distance is known;
+  // estimate the walk as straight line × detour factor and say so.
+  const estWalkM = best.approx ? best.distanceM * DETOUR_FACTOR : best.distanceM;
   const distStr = best.approx
-    ? `> ${formatShortDistance(3219, state.unit)}`
+    ? `≈ ${formatShortDistance(estWalkM, state.unit)}`
     : best.distanceM === 0
       ? 'At station'
       : formatShortDistance(best.distanceM, state.unit);
   const walkStr = best.approx
-    ? ` (~${formatShortDistance(best.distanceM, state.unit)} straight-line)`
+    ? ` · ${formatWalkMinutes(estWalkM)} (est. from ${formatShortDistance(best.distanceM, state.unit)} straight-line × ${DETOUR_FACTOR})`
     : best.distanceM === 0
       ? ''
       : ` · ${formatWalkMinutes(best.distanceM)}`;
-  const reachClass = res.withinReach ? 'in-reach' : 'out-reach';
-  const reachLabel = res.withinReach ? 'Within reach' : 'Beyond slider';
+  const within = !best.approx && res.withinReach;
+  const reachClass = within ? 'in-reach' : 'out-reach';
+  const reachLabel = within ? 'Within reach' : 'Beyond slider';
 
   inspectDist.innerHTML = `
     <span>${distStr}<span class="inspect-walk">${walkStr}</span></span>
@@ -287,10 +302,23 @@ function escapeHtml(s: string): string {
   });
 }
 
+function updateAnalysis(): void {
+  const city = currentCity();
+  reachChart?.update({ cityId: state.cityId, enabledModes: state.enabledModes, distanceM: state.distanceM, unit: state.unit });
+  scenario?.update({
+    modes: [...state.enabledModes],
+    distanceM: state.distanceM,
+    unit: state.unit,
+    cityPop: city.ghsl_pop,
+    cityName: city.name,
+  });
+}
+
 function onSettingsChanged(): void {
   updateDistanceUI();
   updateModePillStates();
   updateCoverageKPIs();
+  updateAnalysis();
   legendDotsItem.classList.toggle('hidden', !state.showDots);
   transitMap.updateFilter(state.enabledModes, state.distanceM, state.showDots, state.showStations);
   compareModal.syncState(state);
@@ -313,7 +341,7 @@ async function loadStations(cityId: string): Promise<StationRecord[]> {
   if (cached) return cached;
 
   const url = dataAssetUrl(`data/stations/${cityId}.json`);
-  const resp = await fetch(url);
+  const resp = await fetch(url, { cache: 'no-cache' });
   if (!resp.ok) throw new Error(`Failed to fetch stations for ${cityId}`);
   const tuples = (await resp.json()) as StationTuple[];
   const records: StationRecord[] = tuples.map(([id, mode, name, lon, lat, inside]) => ({
@@ -347,6 +375,9 @@ async function selectCity(cityId: string): Promise<void> {
   }
   renderModeToggles();
   updateCoverageKPIs();
+  if (scenario?.isActive()) scenario.stop();
+  gapsList.innerHTML = '<p class="gaps-empty">The largest clusters of people beyond the walking distance, in the area on screen.</p>';
+  updateAnalysis();
   sheet.snapTo(sheet.current, false); // content height may have changed
   syncHashState();
 
@@ -443,7 +474,7 @@ function bindEvents(): void {
 
 async function bootstrap(): Promise<void> {
   const summaryUrl = dataAssetUrl('data/summary.json');
-  const resp = await fetch(summaryUrl);
+  const resp = await fetch(summaryUrl, { cache: 'no-cache' }); // revalidate so newly shipped cities show up immediately
   if (!resp.ok) {
     throw new Error(`Could not load summary.json (${resp.status})`);
   }
@@ -467,6 +498,16 @@ async function bootstrap(): Promise<void> {
   });
   compareModal.init(manifest);
 
+  reachChart = new ReachChart({
+    onDistancePick: (m) => {
+      state.distanceM = m;
+      onSettingsChanged();
+    },
+    onOverlaysChanged: () => syncHashState(),
+  });
+  reachChart.init(manifest, (sel) => fillCitySelect(sel, Object.values(manifest.cities)));
+  reachChart.overlays = pendingOverlays;
+
   bindEvents();
 
   transitMap = new TransitMap(document.getElementById('map')!, {
@@ -476,6 +517,28 @@ async function bootstrap(): Promise<void> {
     },
     onZoom: (z) => updateLegendZoom(z),
     onInspect: (res) => renderInspectCard(res),
+  });
+
+  scenario = new Scenario(transitMap, (active) => {
+    document.body.classList.toggle('scenario-active', active);
+    if (active) sheet.snapTo('peek');
+    updateAnalysis();
+  });
+
+  document.getElementById('gaps-btn')!.addEventListener('click', () => {
+    const { gaps, peoplePerDot } = findGaps(transitMap, [...state.enabledModes], state.distanceM);
+    renderGaps(
+      gapsList,
+      gaps,
+      peoplePerDot,
+      state.unit,
+      (g) => transitMap.map.flyTo({ center: [g.lon, g.lat], zoom: Math.max(transitMap.map.getZoom(), 13) }),
+      (g) => {
+        transitMap.map.flyTo({ center: [g.lon, g.lat], zoom: Math.max(transitMap.map.getZoom(), 12.5) });
+        scenario.start([g.lon, g.lat]);
+      }
+    );
+    sheet.snapTo(sheet.current, false);
   });
 }
 

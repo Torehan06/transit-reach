@@ -1281,3 +1281,385 @@ body,
     padding: 12px 14px;
   }
 }
+
+/* ── Segmented toggle ── */
+.seg-toggle {
+  display: inline-flex;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 2px;
+  gap: 2px;
+}
+
+.seg-btn {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.seg-btn.active {
+  background: rgba(45, 212, 191, 0.16);
+  color: var(--teal);
+}
+
+/* ── Reach curve ── */
+.reach-chart {
+  margin-top: 8px;
+  touch-action: none;
+  cursor: crosshair;
+}
+
+.reach-svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.reach-grid {
+  stroke: rgba(148, 163, 184, 0.12);
+  stroke-width: 1;
+}
+
+.reach-axis {
+  fill: var(--text-dim);
+  font-size: 9px;
+  font-family: var(--font);
+}
+
+.reach-line {
+  fill: none;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.reach-marker {
+  stroke: rgba(241, 245, 249, 0.5);
+  stroke-width: 1;
+  stroke-dasharray: 3 3;
+}
+
+.reach-dot {
+  fill: #2dd4bf;
+  stroke: var(--bg);
+  stroke-width: 2;
+}
+
+.reach-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.reach-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 3px 9px;
+  font: inherit;
+  font-size: 0.72rem;
+  color: var(--text);
+}
+
+.reach-chip b {
+  font-variant-numeric: tabular-nums;
+}
+
+.reach-chip i {
+  font-style: normal;
+  color: var(--text-muted);
+}
+
+button.reach-chip {
+  cursor: pointer;
+}
+
+.reach-x {
+  color: var(--text-dim);
+  margin-left: 2px;
+}
+
+.reach-swatch {
+  width: 10px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.reach-swatch.dashed {
+  background: repeating-linear-gradient(90deg, #e2e8f0 0 3px, transparent 3px 5px);
+}
+
+.reach-overlay-row {
+  margin-top: 8px;
+}
+
+.reach-overlay-row .mini-select {
+  width: 100%;
+}
+
+.reach-insight {
+  margin: 8px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  color: var(--text-muted);
+}
+
+.reach-insight b {
+  color: var(--text);
+}
+
+/* ── Biggest gaps ── */
+.gaps-list {
+  margin-top: 6px;
+}
+
+.gaps-empty,
+.gaps-note {
+  margin: 4px 0 0;
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+}
+
+.gap-row {
+  display: grid;
+  grid-template-columns: 20px 1fr;
+  gap: 4px 8px;
+  padding: 7px 0;
+  border-top: 1px solid var(--border);
+  font-size: 0.76rem;
+}
+
+.gap-rank {
+  color: var(--amber);
+  font-weight: 800;
+}
+
+.gap-text span {
+  color: var(--text-muted);
+}
+
+.gap-text .mode-dot {
+  display: inline-block;
+  margin: 0 3px 0 2px;
+  vertical-align: middle;
+}
+
+.gap-actions {
+  grid-column: 2;
+  display: flex;
+  gap: 12px;
+}
+
+/* ── Sketch a line ── */
+.scenario-btn {
+  position: fixed;
+  top: 92px;
+  right: 10px;
+  z-index: 20;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(244, 114, 182, 0.5);
+  color: #f9a8d4;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow);
+}
+
+.scenario-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.scenario-btn.active {
+  background: rgba(244, 114, 182, 0.18);
+}
+
+.scenario-card {
+  position: fixed;
+  right: 16px;
+  bottom: 72px;
+  width: 330px;
+  z-index: 26;
+  background: var(--surface);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(244, 114, 182, 0.45);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 12px 14px;
+}
+
+.scenario-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.scenario-title {
+  font-weight: 800;
+  font-size: 0.86rem;
+  color: #f9a8d4;
+}
+
+.scenario-body {
+  margin-top: 8px;
+  font-size: 0.8rem;
+}
+
+.scenario-hint,
+.scenario-note {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+  line-height: 1.4;
+}
+
+.scenario-note {
+  margin-top: 6px;
+  font-size: 0.68rem;
+  color: var(--text-dim);
+}
+
+.scenario-gain b {
+  font-size: 1.15rem;
+  color: var(--amber);
+}
+
+.scenario-pct {
+  color: var(--text-muted);
+}
+
+.scenario-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  margin-top: 4px;
+  color: var(--text-muted);
+  font-size: 0.74rem;
+}
+
+.scenario-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.text-btn.strong {
+  font-weight: 800;
+}
+
+body.scenario-active .inspect-card {
+  display: none;
+}
+
+.reach-section,
+.gaps-section {
+  margin-bottom: 14px;
+}
+
+.gaps-section {
+  margin-top: 10px;
+}
+
+@media (max-width: 767px) {
+  .scenario-btn {
+    top: 140px;
+    padding: 8px;
+  }
+
+  html:not([data-sheet='peek']) .scenario-btn {
+    display: none;
+  }
+
+  .scenario-btn span {
+    display: none;
+  }
+
+  .scenario-card {
+    top: 60px;
+    bottom: auto;
+    left: 10px;
+    right: 52px;
+    width: auto;
+    padding: 10px 12px;
+  }
+
+  .scenario-card .seg-btn {
+    padding: 4px 6px;
+  }
+}
+
+/* ── Stations vs reach scatter ── */
+.scatter-section {
+  margin-bottom: 18px;
+}
+
+.scatter-svg {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  height: auto;
+}
+
+.scatter-fit {
+  fill: none;
+  stroke: rgba(241, 245, 249, 0.45);
+  stroke-width: 1.5;
+  stroke-dasharray: 5 4;
+}
+
+.scatter-pt {
+  fill-opacity: 0.85;
+  cursor: pointer;
+}
+
+.scatter-pt.above {
+  fill: #2dd4bf;
+}
+
+.scatter-pt.below {
+  fill: #f97316;
+}
+
+.scatter-pt.current {
+  fill: #fbbf24;
+  stroke: #0b0f17;
+  stroke-width: 1.5;
+}
+
+.scatter-tip {
+  fill: var(--text);
+  font-size: 10px;
+  font-weight: 700;
+  font-family: var(--font);
+}
+
+.scatter-caption {
+  margin: 6px 0 0;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+  max-width: 560px;
+}

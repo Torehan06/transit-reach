@@ -27,6 +27,14 @@ function haversineMeters(lon1: number, lat1: number, lon2: number, lat2: number)
   return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
+export interface DotSample {
+  lon: number;
+  lat: number;
+  props: Record<string, number>;
+}
+
+export { haversineMeters };
+
 export interface InspectResult {
   lngLat: [number, number];
   best: InspectModeHit | null;
@@ -50,6 +58,8 @@ export class TransitMap {
   private lastInspectProps: { lngLat: [number, number]; props: Record<string, unknown> } | null = null;
   private onInspectCallback: ((res: InspectResult | null) => void) | null = null;
   private onZoomCallback: ((zoom: number) => void) | null = null;
+  /** When set (e.g. while sketching a line), map clicks go here instead of the inspect card. */
+  public clickOverride: ((lngLat: [number, number]) => void) | null = null;
 
   constructor(
     container: HTMLElement,
@@ -476,6 +486,10 @@ export class TransitMap {
 
   private handleMapClick(e: MapLayerMouseEvent): void {
     if (!this.ready || !this.currentCity) return;
+    if (this.clickOverride) {
+      this.clickOverride([e.lngLat.lng, e.lngLat.lat]);
+      return;
+    }
 
     // 1. Check if user clicked directly on a visible station marker
     if (this.lastShowStations && this.map.getLayer('stations-layer')) {
@@ -681,6 +695,42 @@ export class TransitMap {
       src.setData({ type: 'FeatureCollection', features: [] });
     }
     this.onInspectCallback?.(null);
+  }
+
+  /**
+   * Population dots in the currently loaded tiles (deduplicated across tile buffers),
+   * with the people each dot stands for at the current tile zoom.
+   */
+  public queryDots(): { dots: DotSample[]; peoplePerDot: number } {
+    const out: DotSample[] = [];
+    if (!this.ready || !this.map.getSource('city-tiles')) return { dots: out, peoplePerDot: 0 };
+    const seen = new Set<string>();
+    const feats = this.map.querySourceFeatures('city-tiles', { sourceLayer: 'dots' });
+    for (const f of feats) {
+      if (f.geometry.type !== 'Point') continue;
+      const [lon, lat] = f.geometry.coordinates as [number, number];
+      const key = `${lon.toFixed(5)},${lat.toFixed(5)}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      out.push({ lon, lat, props: (f.properties ?? {}) as Record<string, number> });
+    }
+    const tz = Math.max(8, Math.min(13, Math.floor(this.map.getZoom())));
+    const peoplePerDot = tz < 11 ? 500 : tz === 11 ? 250 : tz === 12 ? 125 : 25;
+    return { dots: out, peoplePerDot };
+  }
+
+  /** Walking distance (m) from a dot to the nearest station of the given modes, from the precomputed tile data (Infinity if beyond ~3.3 km). */
+  public static dotDistance(props: Record<string, number>, modes: ModeCode[]): number {
+    let best = Infinity;
+    for (const m of modes) {
+      const v = props[MODE_BY_CODE[m].distProp];
+      if (typeof v === 'number' && v < best) best = v;
+    }
+    return best;
+  }
+
+  public getStations(): StationRecord[] {
+    return this.stationsList;
   }
 
   public getStationsCount(): number {
