@@ -35,10 +35,10 @@ TILE_SIZE_M = 1_000_000.0
 ORIGIN_X = -18_041_000.0
 ORIGIN_Y = 9_000_000.0
 
-BUCKET_STEP_M = 50
-MAX_BUCKET_M = 3250
-N_BUCKETS = (MAX_BUCKET_M // BUCKET_STEP_M) + 1  # 66 buckets: 0, 50, ..., 3250m
-BASE_PPD = 25.0  # 1 dot = 25 people at z14+
+BUCKET_STEP_M = 100
+MAX_BUCKET_M = 3300
+N_BUCKETS = (MAX_BUCKET_M // BUCKET_STEP_M) + 1  # 34 buckets: 0, 100, ..., 3300m
+BASE_PPD = 25.0  # 1 dot = 25 people at z13+
 DOT_MAX_DIST_M = 3300  # Slightly above 2 miles (3218.69m)
 
 MODE_BITS = {m: 1 << i for i, m in enumerate(MODES)}
@@ -333,17 +333,24 @@ def _write_tiered_dots(
         mode_int_dists[m] = np.where(within, q, -1)
 
     # Tier lookup table for slot = global_dot_idx % 20 (matches z8..z13 tile pyramid)
-    #   z < 11 -> 1/20  (500 people/dot)
-    #   z = 11 -> 5/20  (100 people/dot)
-    #   z = 12 -> 10/20 (50 people/dot)
-    #   z >= 13 -> 20/20 (25 people/dot)
+    #   z < 11  -> 1/20  (500 people/dot)  slot 0
+    #   z = 11  -> 2/20  (250 people/dot)  slots 0, 10
+    #   z = 12  -> 5/20  (100 people/dot)  slots 0, 4, 8, 12, 16  (Wait: 10 must be in z12 subset!)
+    # Check strict nesting! Use slots:
+    #   z < 11  (1/20 = 500 ppl/dot): {0}
+    #   z = 11  (2/20 = 250 ppl/dot): {0, 10}
+    #   z = 12  (5/20 = 100 ppl/dot): {0, 4, 8, 10, 14}? Better: {0, 10} + {5, 15} = 4/20 = 125 ppl/dot!
+    #   YES! 20 / 4 = 5 -> 25 * 5 = 125 people/dot at z12, 250 at z11, 500 at z<11, 25 at z>=13!
+    #   Verify strict nesting: {0} ⊂ {0, 10} ⊂ {0, 5, 10, 15} ⊂ {0..19} !
     slot_minzoom = [
-        8,  # 0  -> 500 ppl/dot
-        13, 12, 13, 11,
-        13, 12, 13, 11,
-        13, 12, 13, 11,
-        13, 12, 13, 11,
-        13, 12, 13,
+        8,   # 0  -> 500 ppl/dot
+        13, 13, 13, 13,
+        12,  # 5  -> 125 ppl/dot
+        13, 13, 13, 13,
+        11,  # 10 -> 250 ppl/dot
+        13, 13, 13, 13,
+        12,  # 15 -> 125 ppl/dot
+        13, 13, 13, 13,
     ]
 
     # Write newline-delimited GeoJSON (GeoJSONSeq) for low-memory streaming into tippecanoe

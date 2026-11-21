@@ -178,6 +178,17 @@ body,
   color: var(--text-muted);
 }
 
+.data-warning {
+  margin: 8px 0 0;
+  padding: 7px 9px;
+  border-radius: 8px;
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  font-size: 0.71rem;
+  line-height: 1.35;
+  color: #fcd34d;
+}
+
 /* ── Coverage KPIs ── */
 .kpi-grid {
   display: grid;

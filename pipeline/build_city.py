@@ -64,6 +64,8 @@ def save_summary(summary: Dict[str, Any], ordered_ids: List[str]) -> None:
     for cid, val in summary["cities"].items():
         if cid not in ordered_cities:
             ordered_cities[cid] = val
+    summary["bucket_step_m"] = BUCKET_STEP_M
+    summary["max_bucket_m"] = MAX_BUCKET_M
     summary["cities"] = ordered_cities
 
     tmp_path = SUMMARY_PATH.with_suffix(".json.tmp")
@@ -170,11 +172,12 @@ def build_one_city(city: Dict[str, Any]) -> Dict[str, Any]:
         with open(STATIONS_DIR / f"{cid}.json", "w", encoding="utf-8") as f:
             json.dump(stations_payload, f, separators=(",", ":"), ensure_ascii=False)
 
-        # Report 1-mile (1609m -> bucket 32 = 1600m) all-modes coverage
+        # Report 1-mile (1609m -> 1600m bucket) all-modes coverage
         all_mask = str(pop_res.available_modes_mask)
+        idx_1mi = 1600 // BUCKET_STEP_M
         if all_mask in pop_res.pop_curves:
-            pop_1mi = pop_res.pop_curves[all_mask][32]
-            area_1mi = pop_res.area_curves[all_mask][32]
+            pop_1mi = pop_res.pop_curves[all_mask][idx_1mi]
+            area_1mi = pop_res.area_curves[all_mask][idx_1mi]
             pop_pct_1mi = (pop_1mi / pop_res.total_pop * 100.0) if pop_res.total_pop > 0 else 0.0
             area_pct_1mi = (area_1mi / pop_res.total_land_cells * 100.0) if pop_res.total_land_cells > 0 else 0.0
             print(f"  [1-mile all modes] Population: {pop_pct_1mi:.1f}% | Area: {area_pct_1mi:.1f}%")
@@ -182,7 +185,7 @@ def build_one_city(city: Dict[str, Any]) -> Dict[str, Any]:
         minx, miny, maxx, maxy = osm_data.boundary_wgs84.bounds
         centroid = osm_data.boundary_wgs84.centroid
 
-        entry = {
+        entry: Dict[str, Any] = {
             "id": cid,
             "name": city["name"],
             "country": city["country"],
@@ -200,6 +203,8 @@ def build_one_city(city: Dict[str, Any]) -> Dict[str, Any]:
             "area_curves": pop_res.area_curves,
             "pmtiles_mb": round(size_bytes / (1024 * 1024), 2),
         }
+        if city.get("data_warning"):
+            entry["data_warning"] = city["data_warning"]
         print(f"  Done in {time.time() - t0:.1f}s")
         return entry
     finally:

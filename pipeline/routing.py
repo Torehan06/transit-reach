@@ -11,7 +11,7 @@ from scipy.sparse.csgraph import connected_components, dijkstra
 from scipy.spatial import cKDTree
 
 MODES = ("m", "t", "c", "b", "f", "u")
-MAX_ROUTE_DIST_M = 10000.0  # Compute up to 10 km for click-to-inspect beyond 2 mi
+MAX_ROUTE_DIST_M = 3600.0  # Covers 2 miles (3219m) + cell snap margin
 
 
 @dataclass

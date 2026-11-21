@@ -40,6 +40,7 @@ export interface CitySummary {
   pop_curves: Record<string, number[]>;
   area_curves: Record<string, number[]>;
   pmtiles_mb: number;
+  data_warning?: string;
 }
 
 export interface SummaryManifest {

@@ -121,7 +121,7 @@ export function formatArea(km2: number, unit: DistanceUnit): string {
 export function peoplePerDotForZoom(zoom: number): number {
   const z = Math.floor(zoom);
   if (z < 11) return 500;
-  if (z === 11) return 100;
-  if (z === 12) return 50;
+  if (z === 11) return 250;
+  if (z === 12) return 125;
   return 25;
 }

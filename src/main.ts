@@ -43,6 +43,7 @@ const state: AppState = {
 // DOM references
 const citySelect = document.getElementById('city-select') as HTMLSelectElement;
 const boundaryNoteEl = document.getElementById('city-boundary-note')!;
+const dataWarningEl = document.getElementById('city-data-warning')!;
 const kpiPopPct = document.getElementById('kpi-pop-pct')!;
 const kpiPopBar = document.getElementById('kpi-pop-bar')!;
 const kpiPopSub = document.getElementById('kpi-pop-sub')!;
@@ -239,8 +240,16 @@ function renderInspectCard(res: InspectResult | null): void {
 
   const best = res.best;
   const meta = MODE_BY_CODE[best.mode];
-  const distStr = best.distanceM === 0 ? 'At station' : formatShortDistance(best.distanceM, state.unit);
-  const walkStr = best.distanceM === 0 ? '' : ` · ${formatWalkMinutes(best.distanceM)}`;
+  const distStr = best.approx
+    ? `> ${formatShortDistance(3219, state.unit)}`
+    : best.distanceM === 0
+      ? 'At station'
+      : formatShortDistance(best.distanceM, state.unit);
+  const walkStr = best.approx
+    ? ` (~${formatShortDistance(best.distanceM, state.unit)} straight-line)`
+    : best.distanceM === 0
+      ? ''
+      : ` · ${formatWalkMinutes(best.distanceM)}`;
   const reachClass = res.withinReach ? 'in-reach' : 'out-reach';
   const reachLabel = res.withinReach ? 'Within reach' : 'Beyond slider';
 
@@ -336,6 +345,13 @@ async function selectCity(cityId: string): Promise<void> {
   citySelect.value = cityId;
   mobileCityName.textContent = city.name;
   boundaryNoteEl.textContent = city.boundary_desc;
+  if (city.data_warning) {
+    dataWarningEl.textContent = city.data_warning;
+    dataWarningEl.classList.remove('hidden');
+  } else {
+    dataWarningEl.textContent = '';
+    dataWarningEl.classList.add('hidden');
+  }
   renderModeToggles();
   updateCoverageKPIs();
   syncHashState();

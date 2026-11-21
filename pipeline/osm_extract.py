@@ -296,6 +296,12 @@ def extract_boundary(pbf_path: Path, city: Dict[str, Any]) -> Tuple[BaseGeometry
         print(f"  Boundary matched ({len(matched_names)} polygons): {', '.join(matched_names[:10])}{'...' if len(matched_names) > 10 else ''}")
 
     boundary_wgs84 = unary_union([g for _, g in matched_geoms])
+    if b_cfg.get("fill_holes"):
+        from shapely.geometry import MultiPolygon as _MP, Polygon as _P
+        if isinstance(boundary_wgs84, _P):
+            boundary_wgs84 = _P(boundary_wgs84.exterior)
+        elif isinstance(boundary_wgs84, _MP):
+            boundary_wgs84 = _MP([_P(g.exterior) for g in boundary_wgs84.geoms])
     if b_cfg.get("clip_bbox"):
         cw, cs, ce, cn = b_cfg["clip_bbox"]
         boundary_wgs84 = boundary_wgs84.intersection(box(cw, cs, ce, cn))

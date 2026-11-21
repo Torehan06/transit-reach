@@ -18,16 +18,27 @@ from routing import MODES, RoutingResult
 MAX_PMTILES_BYTES = 100 * 1024 * 1024  # 100 MB GitHub Pages / GitHub file limit
 SEGMENT_MAX_LEN_M = 110.0
 SEGMENT_MAX_DIST_DELTA_M = 60.0
+STREET_MAX_PROP_DIST_M = 3300.0  # Slider max is 3219m (2 miles); omit far-away properties
 
-MAJOR_HIGHWAYS = {
+ARTERIAL_HIGHWAYS = {
     "trunk",
     "trunk_link",
     "primary",
     "primary_link",
     "secondary",
     "secondary_link",
+}
+
+COLLECTOR_HIGHWAYS = {
     "tertiary",
     "tertiary_link",
+}
+
+CONNECTOR_HIGHWAYS = {
+    "unclassified",
+    "living_street",
+    "pedestrian",
+    "road",
 }
 
 MINOR_HIGHWAYS = {
@@ -43,17 +54,20 @@ MINOR_HIGHWAYS = {
 
 
 def _street_minzoom(highway: str) -> int:
-    if highway in MAJOR_HIGHWAYS:
+    if highway in ARTERIAL_HIGHWAYS:
         return 8
+    if highway in COLLECTOR_HIGHWAYS:
+        return 9
+    if highway in CONNECTOR_HIGHWAYS:
+        return 10
     if highway in MINOR_HIGHWAYS:
-        return 11
-    return 9
+        return 12
+    # residential
+    return 11
 
 
 def _quantize_dist(d: float) -> int:
-    if d <= 3300.0:
-        return int(round(d / 25.0)) * 25
-    return int(round(d / 100.0)) * 100
+    return int(round(d / 25.0)) * 25
 
 
 def write_boundary_geojsonseq(boundary_wgs84: BaseGeometry, out_path: Path) -> None:
@@ -169,14 +183,15 @@ def write_streets_geojsonseq(
                 if math.isfinite(d0) and math.isfinite(d1):
                     d_mid = 0.5 * (d0 + d1)
 
-            props[f"d{m}"] = _quantize_dist(d_mid)
-            sid = int(s_arr[mid_u])
-            if sid < 0:
-                sid = int(s_arr[u_start])
-            if sid < 0:
-                sid = int(s_arr[u_end])
-            if sid >= 0:
-                props[f"s{m}"] = sid
+            if d_mid <= STREET_MAX_PROP_DIST_M:
+                props[f"d{m}"] = _quantize_dist(d_mid)
+                sid = int(s_arr[mid_u])
+                if sid < 0:
+                    sid = int(s_arr[u_start])
+                if sid < 0:
+                    sid = int(s_arr[u_end])
+                if sid >= 0:
+                    props[f"s{m}"] = sid
 
         minzoom = _street_minzoom(highway)
         feat = {
@@ -246,7 +261,7 @@ def write_streets_geojsonseq(
                                 sid = int(st_arrays[m][u_curr])
                             else:
                                 continue
-                            if dm <= 10500.0:
+                            if dm <= STREET_MAX_PROP_DIST_M:
                                 props[f"d{m}"] = _quantize_dist(dm)
                                 if sid >= 0:
                                     props[f"s{m}"] = sid
@@ -293,37 +308,96 @@ def write_streets_geojsonseq(
     return feature_count
 
 
+def _run_cmd(cmd: List[str], label: str) -> None:
+    res = subprocess.run(cmd, capture_output=True, text=True)
+    if res.returncode != 0:
+        raise RuntimeError(f"{label} failed:\n{res.stderr}\n{res.stdout}")
+
+
 def build_pmtiles(
     boundary_path: Path,
     streets_path: Path,
     dots_path: Path,
     output_pmtiles: Path,
 ) -> int:
-    """Package boundary, streets, and tiered dots GeoJSONSeq files into one PMTiles file."""
-    output_pmtiles.parent.mkdir(parents=True, exist_ok=True)
-    tmp_out = output_pmtiles.with_name(f"{output_pmtiles.stem}.tmp.pmtiles")
-    if tmp_out.exists():
-        tmp_out.unlink()
+    """Package boundary, streets, and tiered dots into one fast PMTiles archive.
 
-    cmd = [
-        "tippecanoe",
-        "-o", str(tmp_out),
-        "--force",
-        "-Z8",
-        "-z13",
-        "-r1",
-        "--no-feature-limit",
-        "--no-tile-size-limit",
-        "--simplification=4",
-        "--read-parallel",
-        str(boundary_path),
-        str(streets_path),
-        str(dots_path),
-    ]
-    print(f"  Running tippecanoe -> {output_pmtiles.name}...")
-    res = subprocess.run(cmd, capture_output=True, text=True)
-    if res.returncode != 0:
-        raise RuntimeError(f"tippecanoe failed:\n{res.stderr}\n{res.stdout}")
+    Builds each layer with tailored tippecanoe settings and merges via tile-join:
+      - streets: capped tile bytes with --drop-smallest-as-needed at low/mid zooms
+                 so initial load and zoom-out tiles stay small & snappy
+      - dots:    -r1 --no-feature-limit --no-tile-size-limit so exact zoom-tiered
+                 people-per-dot ratios are never randomly dropped
+      - boundary: lightweight polygon outline across z8..z13
+    """
+    output_pmtiles.parent.mkdir(parents=True, exist_ok=True)
+    work_dir = boundary_path.parent
+    boundary_pm = work_dir / "boundary.pmtiles"
+    streets_pm = work_dir / "streets.pmtiles"
+    dots_pm = work_dir / "dots.pmtiles"
+    tmp_out = output_pmtiles.with_name(f"{output_pmtiles.stem}.tmp.pmtiles")
+    for p in (boundary_pm, streets_pm, dots_pm, tmp_out):
+        p.unlink(missing_ok=True)
+
+    print(f"  Running tippecanoe (streets + dots + boundary) -> {output_pmtiles.name}...")
+
+    _run_cmd(
+        [
+            "tippecanoe",
+            "-o", str(boundary_pm),
+            "--force",
+            "-Z8",
+            "-z13",
+            "--no-tile-size-limit",
+            str(boundary_path),
+        ],
+        "tippecanoe(boundary)",
+    )
+
+    _run_cmd(
+        [
+            "tippecanoe",
+            "-o", str(streets_pm),
+            "--force",
+            "-Z8",
+            "-z13",
+            "--simplification=6",
+            "--maximum-tile-bytes=150000",
+            "--maximum-tile-features=40000",
+            "--drop-smallest-as-needed",
+            "--read-parallel",
+            str(streets_path),
+        ],
+        "tippecanoe(streets)",
+    )
+
+    _run_cmd(
+        [
+            "tippecanoe",
+            "-o", str(dots_pm),
+            "--force",
+            "-Z8",
+            "-z13",
+            "-r1",
+            "--no-feature-limit",
+            "--no-tile-size-limit",
+            "--read-parallel",
+            str(dots_path),
+        ],
+        "tippecanoe(dots)",
+    )
+
+    _run_cmd(
+        [
+            "tile-join",
+            "-f",
+            "-pk",
+            "-o", str(tmp_out),
+            str(boundary_pm),
+            str(streets_pm),
+            str(dots_pm),
+        ],
+        "tile-join",
+    )
 
     size_bytes = tmp_out.stat().st_size
     if size_bytes > MAX_PMTILES_BYTES:

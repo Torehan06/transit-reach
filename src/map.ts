@@ -14,6 +14,17 @@ export interface InspectModeHit {
   mode: ModeCode;
   distanceM: number;
   station: StationRecord;
+  approx?: boolean;
+}
+
+function haversineMeters(lon1: number, lat1: number, lon2: number, lat2: number): number {
+  const toRad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * toRad;
+  const dLon = (lon2 - lon1) * toRad;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLon / 2) ** 2;
+  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 export interface InspectResult {
@@ -262,6 +273,10 @@ export class TransitMap {
       this.map.removeSource('city-tiles');
     }
 
+    // Jump camera to destination city bounds BEFORE adding city-tiles so MapLibre
+    // only fetches the exact destination zoom tiles (zero wasted intermediate tiles).
+    this.fitCurrentCity(0);
+
     const base = new URL(import.meta.env.BASE_URL, window.location.origin);
     const pmtilesUrl = new URL(`data/tiles/${city.id}.pmtiles`, base).href;
 
@@ -355,7 +370,6 @@ export class TransitMap {
 
     this.applyStationFilter();
     this.applyLayerVisibility();
-    this.fitCurrentCity(550);
   }
 
   public fitCurrentCity(duration = 550): void {
@@ -478,21 +492,60 @@ export class TransitMap {
       }
     }
 
-    // 2. Query nearest street segment in expanding pixel boxes around tap point
-    if (!this.map.getLayer('streets-layer')) return;
+    // 2. Query nearest street segment (or population dot at low zoom) around tap point
     let matchedFeature: maplibregl.MapGeoJSONFeature | null = null;
-    for (const radius of [10, 24, 48]) {
-      const feats = this.map.queryRenderedFeatures(
+    if (this.map.getLayer('streets-layer')) {
+      for (const radius of [10, 22]) {
+        const feats = this.map.queryRenderedFeatures(
+          [
+            [e.point.x - radius, e.point.y - radius],
+            [e.point.x + radius, e.point.y + radius],
+          ],
+          { layers: ['streets-layer'] }
+        );
+        if (feats.length > 0) {
+          matchedFeature = feats[0];
+          break;
+        }
+      }
+    }
+
+    // Fallback at low zoom (where residential streets are omitted): check dots layer
+    if (!matchedFeature && this.lastShowDots && this.map.getLayer('dots-layer')) {
+      const dotFeats = this.map.queryRenderedFeatures(
         [
-          [e.point.x - radius, e.point.y - radius],
-          [e.point.x + radius, e.point.y + radius],
+          [e.point.x - 14, e.point.y - 14],
+          [e.point.x + 14, e.point.y + 14],
+        ],
+        { layers: ['dots-layer'] }
+      );
+      if (dotFeats.length > 0) {
+        matchedFeature = dotFeats[0];
+      }
+    }
+
+    // Wider street query if still nothing
+    if (!matchedFeature && this.map.getLayer('streets-layer')) {
+      const wideFeats = this.map.queryRenderedFeatures(
+        [
+          [e.point.x - 44, e.point.y - 44],
+          [e.point.x + 44, e.point.y + 44],
         ],
         { layers: ['streets-layer'] }
       );
-      if (feats.length > 0) {
-        // Pick the feature with properties (closest / first returned by MapLibre)
-        matchedFeature = feats[0];
-        break;
+      if (wideFeats.length > 0) {
+        matchedFeature = wideFeats[0];
+      }
+    }
+
+    // Check if click was inside city boundary polygon even when no street/dot hit
+    if (!matchedFeature && this.map.getLayer('city-boundary-fill')) {
+      const bFeats = this.map.queryRenderedFeatures(e.point, { layers: ['city-boundary-fill'] });
+      if (bFeats.length > 0) {
+        const lngLat: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+        this.lastInspectProps = { lngLat, props: {} };
+        this.emitInspectFromProps(lngLat, {});
+        return;
       }
     }
 
@@ -505,6 +558,20 @@ export class TransitMap {
     const props = { ...matchedFeature.properties };
     this.lastInspectProps = { lngLat, props };
     this.emitInspectFromProps(lngLat, props);
+  }
+
+  private findNearestStationByMode(lngLat: [number, number], mode: ModeCode): { station: StationRecord; straightM: number } | null {
+    let best: StationRecord | null = null;
+    let bestD = Infinity;
+    for (const st of this.stationsList) {
+      if (st.mode !== mode) continue;
+      const d = haversineMeters(lngLat[0], lngLat[1], st.lon, st.lat);
+      if (d < bestD) {
+        bestD = d;
+        best = st;
+      }
+    }
+    return best ? { station: best, straightM: bestD } : null;
   }
 
   private emitInspectFromProps(lngLat: [number, number], props: Record<string, unknown>): void {
@@ -526,18 +593,36 @@ export class TransitMap {
       const meta = MODE_BY_CODE[mode];
       const rawDist = props[meta.distProp];
       const rawSid = props[meta.stationProp];
-      if (rawDist !== undefined && rawDist !== null && rawSid !== undefined && rawSid !== null) {
+      if (rawDist !== undefined && rawDist !== null) {
         const distM = Number(rawDist);
-        const st = this.stationsById.get(Number(rawSid));
+        let st = rawSid !== undefined && rawSid !== null ? this.stationsById.get(Number(rawSid)) : undefined;
+        if (!st) {
+          st = this.findNearestStationByMode(lngLat, mode)?.station;
+        }
         if (Number.isFinite(distM) && st) {
-          byMode.push({ mode, distanceM: distM, station: st });
+          byMode.push({ mode, distanceM: distM, station: st, approx: false });
+        }
+      }
+    }
+
+    // If beyond precomputed 2-mile walking range (>3.3 km), fall back to nearest station by straight-line
+    if (byMode.length === 0) {
+      for (const mode of enabled) {
+        const hit = this.findNearestStationByMode(lngLat, mode);
+        if (hit) {
+          byMode.push({
+            mode,
+            distanceM: Math.max(3300, Math.round(hit.straightM)),
+            station: hit.station,
+            approx: true,
+          });
         }
       }
     }
 
     byMode.sort((a, b) => a.distanceM - b.distanceM);
     const best = byMode.length > 0 ? byMode[0] : null;
-    const withinReach = best !== null && best.distanceM <= this.lastDistanceM;
+    const withinReach = best !== null && !best.approx && best.distanceM <= this.lastDistanceM;
 
     this.setInspectGraphics(lngLat, best?.station ?? null);
     this.onInspectCallback?.({

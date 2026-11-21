@@ -114,7 +114,7 @@
     "id": "almaty",
     "name": "Almaty",
     "country": "Kazakhstan",
-    "region": "Kazakhstan",
+    "region": "Central Asia & Caucasus",
     "official_pop": 2250000,
     "boundary_desc": "City of Almaty (City of Republican Significance)",
     "pbf": { "source": "geofabrik", "path": "asia/kazakhstan/kazakhstan-latest.osm.pbf" },
@@ -131,7 +131,7 @@
     "id": "astana",
     "name": "Astana",
     "country": "Kazakhstan",
-    "region": "Kazakhstan",
+    "region": "Central Asia & Caucasus",
     "official_pop": 1480000,
     "boundary_desc": "City of Astana (City of Republican Significance)",
     "pbf": { "source": "geofabrik", "path": "asia/kazakhstan/kazakhstan-latest.osm.pbf" },
@@ -156,12 +156,36 @@
     "id": "shymkent",
     "name": "Shymkent",
     "country": "Kazakhstan",
-    "region": "Kazakhstan",
+    "region": "Central Asia & Caucasus",
     "official_pop": 1240000,
     "boundary_desc": "City of Shymkent (City of Republican Significance)",
     "pbf": { "source": "geofabrik", "path": "asia/kazakhstan/kazakhstan-latest.osm.pbf" },
     "bbox": [69.05, 41.95, 70.20, 42.68],
     "boundary": { "relation_ids": [3389772] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "tbilisi",
+    "name": "Tbilisi",
+    "country": "Georgia",
+    "region": "Central Asia & Caucasus",
+    "official_pop": 1185000,
+    "boundary_desc": "City of Tbilisi (Tbilisi Municipality)",
+    "pbf": { "source": "geofabrik", "path": "europe/georgia/georgia-latest.osm.pbf" },
+    "bbox": [44.50, 41.52, 45.12, 41.95],
+    "boundary": { "admin_level": "4", "names": ["თბილისი", "Tbilisi"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "baku",
+    "name": "Baku",
+    "country": "Azerbaijan",
+    "region": "Central Asia & Caucasus",
+    "official_pop": 1280000,
+    "boundary_desc": "City of Baku urban core (excludes rural Absheron Peninsula settlements)",
+    "pbf": { "source": "geofabrik", "path": "asia/azerbaijan/azerbaijan-latest.osm.pbf" },
+    "bbox": [49.30, 39.85, 50.65, 40.78],
+    "boundary": { "relation_ids": [2415335] },
     "mode_overrides": {}
   },
   {
@@ -337,6 +361,118 @@
     "pbf": { "source": "bbbike", "name": "Stockholm" },
     "bbox": [17.70, 59.20, 18.28, 59.45],
     "boundary": { "admin_level": "7", "names": ["Stockholms kommun", "Stockholm"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "milan",
+    "name": "Milan",
+    "country": "Italy",
+    "region": "Europe",
+    "official_pop": 1372000,
+    "boundary_desc": "Municipality of Milan (Comune di Milano)",
+    "pbf": { "source": "geofabrik", "path": "europe/italy/nord-ovest/nord-ovest-latest.osm.pbf" },
+    "bbox": [8.96, 45.32, 9.36, 45.60],
+    "boundary": { "admin_level": "8", "names": ["Milano", "Milan"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "rome",
+    "name": "Rome",
+    "country": "Italy",
+    "region": "Europe",
+    "official_pop": 2755000,
+    "boundary_desc": "Municipality of Rome (Comune di Roma / Roma Capitale)",
+    "pbf": { "source": "geofabrik", "path": "europe/italy/centro/centro-latest.osm.pbf" },
+    "bbox": [12.16, 41.60, 12.92, 42.20],
+    "boundary": { "admin_level": "8", "names": ["Roma", "Rome"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "prague",
+    "name": "Prague",
+    "country": "Czechia",
+    "region": "Europe",
+    "official_pop": 1385000,
+    "boundary_desc": "City of Prague (Hlavní město Praha)",
+    "pbf": { "source": "bbbike", "name": "Prag" },
+    "bbox": [14.20, 49.91, 14.75, 50.18],
+    "boundary": { "admin_level": ["4", "6", "8"], "names": ["Praha", "Hlavní město Praha", "Prague"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "warsaw",
+    "name": "Warsaw",
+    "country": "Poland",
+    "region": "Europe",
+    "official_pop": 1862000,
+    "boundary_desc": "City of Warsaw (Miasto stołeczne Warszawa)",
+    "pbf": { "source": "bbbike", "name": "Warsaw" },
+    "bbox": [20.78, 52.05, 21.34, 52.42],
+    "boundary": { "admin_level": ["6", "8"], "names": ["Warszawa", "Warsaw"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "lisbon",
+    "name": "Lisbon",
+    "country": "Portugal",
+    "region": "Europe",
+    "official_pop": 567000,
+    "boundary_desc": "Municipality of Lisbon (Município de Lisboa)",
+    "pbf": { "source": "bbbike", "name": "Lisbon" },
+    "bbox": [-9.30, 38.64, -9.02, 38.86],
+    "boundary": { "admin_level": "7", "names": ["Lisboa", "Lisbon"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "athens",
+    "name": "Athens",
+    "country": "Greece",
+    "region": "Europe",
+    "official_pop": 3090000,
+    "boundary_desc": "Athens–Piraeus Urban Area (Central, North, South, West Athens & Piraeus Regional Units)",
+    "pbf": { "source": "geofabrik", "path": "europe/greece/greece-latest.osm.pbf" },
+    "bbox": [23.50, 37.75, 24.08, 38.25],
+    "boundary": {
+      "admin_level": "6",
+      "names": [
+        "Περιφερειακή Ενότητα Κεντρικού Τομέα Αθηνών",
+        "Περιφερειακή Ενότητα Βορείου Τομέα Αθηνών",
+        "Περιφερειακή Ενότητα Νοτίου Τομέα Αθηνών",
+        "Περιφερειακή Ενότητα Δυτικού Τομέα Αθηνών",
+        "Περιφερειακή Ενότητα Πειραιώς",
+        "Central Athens Regional Unit",
+        "North Athens Regional Unit",
+        "South Athens Regional Unit",
+        "West Athens Regional Unit",
+        "Piraeus Regional Unit"
+      ]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "moscow",
+    "name": "Moscow",
+    "country": "Russia",
+    "region": "Europe",
+    "official_pop": 12350000,
+    "boundary_desc": "9 urban administrative okrugs of Old Moscow (excluding rural New Moscow and Zelenograd exclave)",
+    "pbf": { "source": "geofabrik", "path": "russia/central-fed-district-latest.osm.pbf" },
+    "bbox": [36.75, 55.45, 38.08, 56.05],
+    "boundary": {
+      "admin_level": "5",
+      "names": [
+        "Центральный административный округ",
+        "Северный административный округ",
+        "Северо-Восточный административный округ",
+        "Восточный административный округ",
+        "Юго-Восточный административный округ",
+        "Южный административный округ",
+        "Юго-Западный административный округ",
+        "Западный административный округ",
+        "Северо-Западный административный округ"
+      ],
+      "clip_bbox": [37.28, 55.50, 38.00, 56.02]
+    },
     "mode_overrides": {}
   },
   {
@@ -536,6 +672,125 @@
     "mode_overrides": {}
   },
   {
+    "id": "houston",
+    "name": "Houston",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 2314000,
+    "boundary_desc": "City of Houston",
+    "pbf": { "source": "geofabrik", "path": "north-america/us/texas/texas-latest.osm.pbf" },
+    "bbox": [-95.88, 29.46, -94.95, 30.18],
+    "boundary": { "admin_level": "8", "names": ["Houston"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "name": "METRORapid|Silver Line" }
+      ]
+    }
+  },
+  {
+    "id": "mexico-city",
+    "name": "Mexico City",
+    "country": "Mexico",
+    "region": "Latin America",
+    "official_pop": 9210000,
+    "boundary_desc": "Mexico City (Ciudad de México, 16 alcaldías)",
+    "pbf": { "source": "geofabrik", "path": "north-america/mexico/mexico-latest.osm.pbf" },
+    "bbox": [-99.42, 19.00, -98.88, 19.65],
+    "boundary": { "admin_level": "4", "names": ["Ciudad de México", "Mexico City"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "network": "Metrob[úu]s" },
+        { "operator": "Metrob[úu]s" }
+      ]
+    }
+  },
+  {
+    "id": "sao-paulo",
+    "name": "São Paulo",
+    "country": "Brazil",
+    "region": "Latin America",
+    "official_pop": 11452000,
+    "boundary_desc": "Municipality of São Paulo (Município de São Paulo)",
+    "pbf": { "source": "geofabrik", "path": "south-america/brazil/sudeste/sudeste-latest.osm.pbf" },
+    "bbox": [-46.90, -24.08, -46.30, -23.30],
+    "boundary": { "admin_level": "8", "names": ["São Paulo"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "name": "Expresso Tiradentes|BRT ABC" }
+      ]
+    }
+  },
+  {
+    "id": "rio-de-janeiro",
+    "name": "Rio de Janeiro",
+    "country": "Brazil",
+    "region": "Latin America",
+    "official_pop": 6211000,
+    "boundary_desc": "Municipality of Rio de Janeiro (Município do Rio de Janeiro)",
+    "pbf": { "source": "geofabrik", "path": "south-america/brazil/sudeste/sudeste-latest.osm.pbf" },
+    "bbox": [-43.86, -23.14, -43.04, -22.68],
+    "boundary": { "admin_level": "8", "names": ["Rio de Janeiro"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "network": "BRT|MOBI-Rio" },
+        { "operator": "MOBI-Rio|BRT" },
+        { "name": "TransOeste|TransCarioca|TransOl[íi]mpica|TransBrasil|\\bBRT\\b" }
+      ]
+    }
+  },
+  {
+    "id": "buenos-aires",
+    "name": "Buenos Aires",
+    "country": "Argentina",
+    "region": "Latin America",
+    "official_pop": 3121000,
+    "boundary_desc": "Autonomous City of Buenos Aires (CABA)",
+    "pbf": { "source": "bbbike", "name": "BuenosAires" },
+    "bbox": [-58.62, -34.76, -58.28, -34.48],
+    "boundary": { "admin_level": "4", "names": ["Ciudad Autónoma de Buenos Aires", "Buenos Aires"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "network": "Metrobus" },
+        { "name": "Metrobus" }
+      ]
+    }
+  },
+  {
+    "id": "santiago",
+    "name": "Santiago",
+    "country": "Chile",
+    "region": "Latin America",
+    "official_pop": 5820000,
+    "boundary_desc": "Greater Santiago (32 contiguous urban comunas: Provincia de Santiago excl. mountain Lo Barnechea, plus Puente Alto)",
+    "pbf": { "source": "geofabrik", "path": "south-america/chile-latest.osm.pbf" },
+    "bbox": [-71.00, -33.72, -70.35, -33.18],
+    "boundary": {
+      "relation_ids": [
+        109577, 162983, 162984, 162990, 162991, 162992, 162993,
+        164091, 164102, 164137, 164609, 166571, 168055, 168056,
+        168057, 168058, 168059, 168060, 168259, 168260, 168268,
+        168269, 168271, 190910, 191190, 191193, 191200, 191201,
+        191203, 191216, 191220, 224590
+      ]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "dubai",
+    "name": "Dubai",
+    "country": "United Arab Emirates",
+    "region": "Middle East",
+    "official_pop": 3411000,
+    "boundary_desc": "Emirate of Dubai (urban & coastal territory, excluding inland Hatta exclave)",
+    "pbf": { "source": "geofabrik", "path": "asia/gcc-states/gcc-states-latest.osm.pbf" },
+    "bbox": [54.80, 24.55, 56.28, 25.45],
+    "boundary": {
+      "relation_ids": [3766483],
+      "clip_bbox": [54.85, 24.75, 55.62, 25.40]
+    },
+    "mode_overrides": {}
+  },
+  {
     "id": "tokyo",
     "name": "Tokyo",
     "country": "Japan",
@@ -597,6 +852,123 @@
         2670978, 2800200, 2800201, 2800276, 2800277,
         7351646, 8189562, 8191142, 8368100, 8477820,
         8480494, 8480823, 9159733, 9159737
+      ]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "osaka",
+    "name": "Osaka",
+    "country": "Japan",
+    "region": "Asia",
+    "official_pop": 2791000,
+    "boundary_desc": "City of Osaka (24 wards)",
+    "pbf": { "source": "geofabrik", "path": "asia/japan/kansai/kansai-latest.osm.pbf" },
+    "bbox": [135.30, 34.52, 135.68, 34.82],
+    "boundary": { "admin_level": ["7", "6"], "names": ["大阪市", "Osaka"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "taipei",
+    "name": "Taipei",
+    "country": "Taiwan",
+    "region": "Asia",
+    "official_pop": 2495000,
+    "boundary_desc": "Taipei City (12 districts)",
+    "pbf": { "source": "geofabrik", "path": "asia/taiwan/taiwan-latest.osm.pbf" },
+    "bbox": [121.38, 24.90, 121.74, 25.28],
+    "boundary": { "admin_level": "4", "names": ["臺北市", "台北市", "Taipei", "Taipei City"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "shanghai",
+    "name": "Shanghai",
+    "country": "China",
+    "region": "Asia",
+    "official_pop": 12370000,
+    "boundary_desc": "8 central urban districts (Huangpu, Xuhui, Changning, Jing'an, Putuo, Hongkou, Yangpu, Pudong New Area)",
+    "data_warning": "OpenStreetMap's walking network in Shanghai is sparser than in most other cities (~190 street segments/km² vs. 350–600 in Tokyo or Seoul), especially inside gated residential compounds. Walking distances and coverage here are conservative lower-bound estimates.",
+    "pbf": { "source": "geofabrik", "path": "asia/china/shanghai/shanghai-latest.osm.pbf" },
+    "bbox": [121.25, 30.80, 122.05, 31.42],
+    "boundary": {
+      "relation_ids": [
+        371650, 1278188, 398899, 398886, 398351, 398350,
+        14186005, 14186006, 14186007, 14186008, 14186009, 14186010, 14186011,
+        14186012, 14186013, 14186014, 14186015, 14186016, 14186017, 14186018,
+        5325929, 12867311, 12867312, 12867313, 12867438, 14178760, 14178772,
+        14178805, 14178830, 14178857, 14178858, 14178911, 14179063, 14179071,
+        14179101, 14179128, 14179148, 14179174, 14179184, 14179185, 14179186,
+        14179188, 14179226, 14179286, 14179320, 14179332, 14179368, 14179369,
+        14179370, 14179522, 14180406, 14180407, 14180408, 14180410, 14180411,
+        14180412
+      ]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "beijing",
+    "name": "Beijing",
+    "country": "China",
+    "region": "Asia",
+    "official_pop": 10988000,
+    "boundary_desc": "6 central urban districts (Dongcheng, Xicheng, Chaoyang, Haidian, Fengtai, Shijingshan)",
+    "data_warning": "OpenStreetMap's walking network in Beijing is sparser than in most other cities (~155 street segments/km² vs. 350–600 in Tokyo or Seoul), especially inside gated residential compounds and hutong alleys. Walking distances and coverage here are conservative lower-bound estimates.",
+    "pbf": { "source": "geofabrik", "path": "asia/china/beijing/beijing-latest.osm.pbf" },
+    "bbox": [116.02, 39.72, 116.72, 40.22],
+    "boundary": {
+      "relation_ids": [288600, 2988933, 2988946, 5505984, 5505985],
+      "fill_holes": true
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "delhi",
+    "name": "Delhi",
+    "country": "India",
+    "region": "Asia",
+    "official_pop": 21000000,
+    "boundary_desc": "National Capital Territory of Delhi (NCT Delhi)",
+    "pbf": { "source": "geofabrik", "path": "asia/india/northern-zone/northern-zone-latest.osm.pbf" },
+    "bbox": [76.78, 28.34, 77.42, 28.94],
+    "boundary": { "admin_level": "4", "names": ["Delhi", "National Capital Territory of Delhi", "दिल्ली"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "sydney",
+    "name": "Sydney",
+    "country": "Australia",
+    "region": "Oceania",
+    "official_pop": 2460000,
+    "boundary_desc": "19 inner & middle metropolitan LGAs of Sydney (City of Sydney to Parramatta, Ryde, Chatswood, Canterbury-Bankstown & Randwick)",
+    "pbf": { "source": "bbbike", "name": "Sydney" },
+    "bbox": [150.83, -34.06, 151.33, -33.68],
+    "boundary": {
+      "relation_ids": [
+        1251066, 1251053, 2161967, 2162244, 6201664, 6203556, 6203650,
+        6205809, 6210847, 6210859, 6217262, 6217271, 6218884, 6230051,
+        6273237, 6275976, 6275980, 6276645, 7038238
+      ]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "melbourne",
+    "name": "Melbourne",
+    "country": "Australia",
+    "region": "Oceania",
+    "official_pop": 2520000,
+    "boundary_desc": "17 inner & middle metropolitan LGAs of Melbourne (City of Melbourne to Darebin, Boroondara, Monash, Bayside, Brimbank & Hobsons Bay)",
+    "pbf": { "source": "bbbike", "name": "Melbourne" },
+    "bbox": [144.68, -38.02, 145.30, -37.53],
+    "boundary": {
+      "admin_level": "6",
+      "names": [
+        "City of Banyule", "City of Bayside", "City of Boroondara", "City of Brimbank",
+        "City of Darebin", "City of Glen Eira", "City of Greater Dandenong", "City of Hobsons Bay",
+        "City of Kingston", "City of Knox", "City of Manningham", "City of Maribyrnong",
+        "City of Maroondah", "City of Melbourne", "City of Merri-bek", "City of Moreland",
+        "City of Monash", "City of Moonee Valley", "City of Port Phillip", "City of Stonnington",
+        "City of Whitehorse", "City of Yarra", "City of Hume", "City of Whittlesea"
       ]
     },
     "mode_overrides": {}
