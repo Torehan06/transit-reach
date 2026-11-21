@@ -218,6 +218,20 @@ def extract_boundary(pbf_path: Path, city: Dict[str, Any]) -> Tuple[BaseGeometry
     west, south, east, north = city["bbox"]
     bbox_poly = box(west, south, east, north)
 
+    if b_cfg.get("geojson"):
+        # Pre-defined polygon (e.g. a GHS-UCDB urban centre), no OSM lookup needed.
+        from shapely.geometry import shape as _shape
+        boundary_wgs84 = _shape(b_cfg["geojson"])
+        if not boundary_wgs84.is_valid:
+            boundary_wgs84 = make_valid(boundary_wgs84)
+        centroid = boundary_wgs84.centroid
+        utm_crs = _choose_utm_crs(centroid.x, centroid.y)
+        to_utm = pyproj.Transformer.from_crs("EPSG:4326", utm_crs, always_xy=True)
+        boundary_utm = shapely_transform(to_utm.transform, boundary_wgs84)
+        if not boundary_utm.is_valid:
+            boundary_utm = make_valid(boundary_utm)
+        return boundary_wgs84, boundary_utm, utm_crs
+
     target_rel_ids: Optional[Set[int]] = set(b_cfg["relation_ids"]) if b_cfg.get("relation_ids") else None
     admin_levels = b_cfg.get("admin_level")
     if isinstance(admin_levels, str):

@@ -53,6 +53,7 @@ class PopulationResult:
     pop_curves: Dict[str, List[int]]   # mask_str -> 66 cumulative ints
     area_curves: Dict[str, List[int]]  # mask_str -> 66 cumulative land cells (hectares)
     dot_count: int
+    snapped_pop_share: float = 1.0  # share of population whose cell snapped to the street graph
 
 
 def _ghsl_tiles_for_bounds(minx: float, miny: float, maxx: float, maxy: float) -> List[Tuple[int, int]]:
@@ -94,7 +95,7 @@ def process_population(
     utm_crs: pyproj.CRS,
     routing: RoutingResult,
     cache_dir: Path,
-    dots_geojsonseq_path: Path,
+    dots_geojsonseq_path: Optional[Path],
 ) -> PopulationResult:
     """Load GHSL cells inside city boundary, compute coverage curves, and stream tiered dots."""
     to_moll = pyproj.Transformer.from_crs("EPSG:4326", MOLLWEIDE_CRS, always_xy=True)
@@ -237,18 +238,21 @@ def process_population(
         pop_curves[str(mask)] = [int(round(v)) for v in np.cumsum(pop_hist)]
         area_curves[str(mask)] = [int(v) for v in np.cumsum(area_hist)]
 
-    # Generate tiered fixed-position population dots as GeoJSONSeq
-    dot_count = _write_tiered_dots(
-        cell_mx=cell_mx,
-        cell_my=cell_my,
-        cell_pop=cell_pop,
-        cell_seed=cell_seed,
-        cell_dist_by_mode=cell_dist_by_mode,
-        available_modes=available_modes,
-        boundary_moll=boundary_moll,
-        moll_to_wgs=moll_to_wgs,
-        out_path=dots_geojsonseq_path,
-    )
+    # Generate tiered fixed-position population dots as GeoJSONSeq (skipped for stats-only passes)
+    dot_count = 0
+    if dots_geojsonseq_path is not None:
+        dot_count = _write_tiered_dots(
+            cell_mx=cell_mx,
+            cell_my=cell_my,
+            cell_pop=cell_pop,
+            cell_seed=cell_seed,
+            cell_dist_by_mode=cell_dist_by_mode,
+            available_modes=available_modes,
+            boundary_moll=boundary_moll,
+            moll_to_wgs=moll_to_wgs,
+            out_path=dots_geojsonseq_path,
+        )
+
 
     return PopulationResult(
         total_pop=total_pop,
@@ -258,6 +262,7 @@ def process_population(
         pop_curves=pop_curves,
         area_curves=area_curves,
         dot_count=dot_count,
+        snapped_pop_share=float(np.sum(cell_pop[snapped_ok]) / total_pop) if total_pop > 0 else 0.0,
     )
 
 

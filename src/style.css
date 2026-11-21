@@ -1663,3 +1663,27 @@ body.scenario-active .inspect-card {
   color: var(--text-muted);
   max-width: 560px;
 }
+
+/* ── City limits / urban area toggle ── */
+.area-toggle {
+  margin-top: 10px;
+  width: 100%;
+  display: flex;
+}
+
+.area-toggle .seg-btn {
+  flex: 1;
+}
+
+.urban-tag {
+  display: none;
+  color: #fbbf24;
+}
+
+body.area-urban .urban-tag {
+  display: inline;
+}
+
+body.area-urban .mobile-kpis {
+  border-color: rgba(251, 191, 36, 0.55);
+}

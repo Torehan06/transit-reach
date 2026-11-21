@@ -4,7 +4,8 @@ import './style.css';
 import { CompareModal } from './compare';
 import { cityLabel, fillCitySelect } from './regions';
 import { ReachChart } from './reach';
-import { DETOUR_FACTOR, Scenario } from './scenario';
+import { DETOUR_FACTOR, Scenario, decodeSketch } from './scenario';
+import { UcStats, loadUrbanData, ucFor, urbanManifest } from './urban';
 import { findGaps, renderGaps } from './gaps';
 import { BottomSheet } from './sheet';
 import { InspectResult, TransitMap } from './map';
@@ -45,6 +46,7 @@ const state: AppState = {
   enabledModes: new Set<ModeCode>(MODES.map((m) => m.code)),
   showDots: true,
   showStations: true,
+  area: 'city',
 };
 
 // DOM references
@@ -95,6 +97,50 @@ function currentCity(): CitySummary {
   return manifest.cities[state.cityId];
 }
 
+/** Stats for the current view (city limits or urban area); map data always comes from currentCity(). */
+let statsManifest: SummaryManifest;
+let urbanData: Record<string, UcStats> | null = null;
+function statsCity(): CitySummary {
+  return statsManifest?.cities[state.cityId] ?? currentCity();
+}
+
+function updateBoundaryNote(): void {
+  const c = statsCity();
+  boundaryNoteEl.textContent =
+    state.area === 'urban'
+      ? c.uc_missing
+        ? `No urban-centre data for this city; showing ${currentCity().boundary_desc}.`
+        : `${c.boundary_desc} Dots are only drawn inside the city limits; the dashed line marks the urban area.`
+      : currentCity().boundary_desc;
+  document.querySelectorAll<HTMLButtonElement>('[data-area]').forEach((b) => {
+    const on = b.dataset.area === state.area;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  transitMap?.setUrbanOutline(state.area === 'urban' && urbanData ? ucFor(urbanData, state.cityId)?.geom ?? null : null);
+}
+
+async function setArea(area: 'city' | 'urban'): Promise<void> {
+  if (area === 'urban') {
+    try {
+      urbanData = await loadUrbanData(dataAssetUrl('data/summary_uc.json'));
+    } catch {
+      boundaryNoteEl.textContent = 'Urban-area data could not be loaded.';
+      return;
+    }
+    statsManifest = urbanManifest(manifest, urbanData);
+  } else {
+    statsManifest = manifest;
+  }
+  state.area = area;
+  document.body.classList.toggle('area-urban', area === 'urban');
+  compareModal.setManifest(statsManifest);
+  reachChart.setManifest(statsManifest);
+  renderModeToggles();
+  updateBoundaryNote();
+  onSettingsChanged();
+}
+
 function parseHashState(): void {
   const raw = window.location.hash.replace(/^#/, '');
   if (!raw) return;
@@ -114,9 +160,15 @@ function parseHashState(): void {
   if (u === 'mi' || u === 'km') {
     state.unit = u;
   }
+  pendingArea = params.get('a') === 'u' ? 'urban' : 'city';
   const cmp = params.get('cmp');
   pendingOverlays = cmp ? cmp.split('.').filter((id) => manifest.cities[id]).slice(0, 3) : [];
+  const sk = params.get('sk');
+  pendingSketch = sk ? decodeSketch(sk) : null;
 }
+
+let pendingArea: 'city' | 'urban' = 'city';
+let pendingSketch: { vertices: [number, number][]; spacing: number } | null = null;
 
 let pendingOverlays: string[] = [];
 
@@ -126,6 +178,9 @@ function syncHashState(): void {
   params.set('d', String(state.distanceM));
   params.set('u', state.unit);
   if (reachChart?.overlays.length) params.set('cmp', reachChart.overlays.join('.'));
+  if (state.area === 'urban') params.set('a', 'u');
+  const sk = scenario?.shareParam();
+  if (sk) params.set('sk', sk);
   history.replaceState(null, '', `#${params.toString()}`);
 }
 
@@ -136,7 +191,7 @@ function populateCitySelector(): void {
 }
 
 function renderModeToggles(): void {
-  const city = currentCity();
+  const city = statsCity();
   modeGrid.innerHTML = '';
 
   for (const m of MODES) {
@@ -165,7 +220,7 @@ function renderModeToggles(): void {
 }
 
 function updateModePillStates(): void {
-  const city = currentCity();
+  const city = statsCity();
   modeGrid.querySelectorAll<HTMLButtonElement>('.mode-pill').forEach((btn) => {
     const code = btn.dataset.mode as ModeCode;
     const count = city.station_counts[code] || 0;
@@ -191,7 +246,7 @@ function updateDistanceUI(): void {
 }
 
 function updateCoverageKPIs(): void {
-  const city = currentCity();
+  const city = statsCity();
   const stats = computeCityCoverage(
     city,
     state.enabledModes,
@@ -303,7 +358,7 @@ function escapeHtml(s: string): string {
 }
 
 function updateAnalysis(): void {
-  const city = currentCity();
+  const city = statsCity();
   reachChart?.update({ cityId: state.cityId, enabledModes: state.enabledModes, distanceM: state.distanceM, unit: state.unit });
   scenario?.update({
     modes: [...state.enabledModes],
@@ -365,7 +420,7 @@ async function selectCity(cityId: string): Promise<void> {
   mobileCitySelect.value = cityId;
   mobileCityName.textContent = city.name;
   mobileCitySelect.setAttribute('aria-label', `City: ${cityLabel(city)}`);
-  boundaryNoteEl.textContent = city.boundary_desc;
+  updateBoundaryNote();
   if (city.data_warning) {
     dataWarningEl.textContent = city.data_warning;
     dataWarningEl.classList.remove('hidden');
@@ -446,6 +501,10 @@ function bindEvents(): void {
     transitMap.clearInspect();
   });
 
+  document.querySelectorAll<HTMLButtonElement>('[data-area]').forEach((b) =>
+    b.addEventListener('click', () => void setArea(b.dataset.area === 'urban' ? 'urban' : 'city'))
+  );
+
   const openCompare = () => compareModal.open(state);
   document.getElementById('compare-btn')?.addEventListener('click', openCompare);
   document.getElementById('mobile-compare-btn')?.addEventListener('click', openCompare);
@@ -497,6 +556,8 @@ async function bootstrap(): Promise<void> {
     selectCity(cid);
   });
   compareModal.init(manifest);
+  statsManifest = manifest;
+  document.querySelector('.area-toggle')?.classList.toggle('hidden', !manifest.has_uc);
 
   reachChart = new ReachChart({
     onDistancePick: (m) => {
@@ -514,6 +575,12 @@ async function bootstrap(): Promise<void> {
     onReady: () => {
       updateLegendZoom(transitMap.map.getZoom());
       selectCity(state.cityId);
+      if (pendingArea === 'urban' && manifest.has_uc) void setArea('urban');
+      const sk = pendingSketch;
+      if (sk) {
+        pendingSketch = null;
+        transitMap.map.once('idle', () => scenario.load(sk.vertices, sk.spacing));
+      }
     },
     onZoom: (z) => updateLegendZoom(z),
     onInspect: (res) => renderInspectCard(res),
@@ -523,7 +590,7 @@ async function bootstrap(): Promise<void> {
     document.body.classList.toggle('scenario-active', active);
     if (active) sheet.snapTo('peek');
     updateAnalysis();
-  });
+  }, () => syncHashState());
 
   document.getElementById('gaps-btn')!.addEventListener('click', () => {
     const { gaps, peoplePerDot } = findGaps(transitMap, [...state.enabledModes], state.distanceM);

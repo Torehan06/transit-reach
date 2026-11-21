@@ -132,6 +132,11 @@ export class ReachChart {
     });
   }
 
+  public setManifest(manifest: SummaryManifest): void {
+    this.manifest = manifest;
+    this.render();
+  }
+
   public init(manifest: SummaryManifest, fillSelect: (sel: HTMLSelectElement) => void): void {
     this.manifest = manifest;
     fillSelect(this.overlaySelect);

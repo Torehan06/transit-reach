@@ -688,6 +688,30 @@ export class TransitMap {
     src.setData({ type: 'FeatureCollection', features });
   }
 
+  /** Dashed outline of the urban centre in the "Urban area" view (null hides it). */
+  public setUrbanOutline(geom: GeoJSON.Geometry | null): void {
+    const data: GeoJSON.FeatureCollection = {
+      type: 'FeatureCollection',
+      features: geom ? [{ type: 'Feature', properties: {}, geometry: geom }] : [],
+    };
+    const src = this.map.getSource('urban-outline') as maplibregl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData(data);
+      return;
+    }
+    if (!geom) return;
+    this.map.addSource('urban-outline', { type: 'geojson', data });
+    this.map.addLayer(
+      {
+        id: 'urban-outline-line',
+        type: 'line',
+        source: 'urban-outline',
+        paint: { 'line-color': '#fbbf24', 'line-width': 1.6, 'line-opacity': 0.85, 'line-dasharray': [3, 2] },
+      },
+      this.map.getLayer('stations-layer') ? 'stations-layer' : undefined
+    );
+  }
+
   public clearInspect(): void {
     this.lastInspectProps = null;
     const src = this.map.getSource('inspect-src') as GeoJSONSource | undefined;

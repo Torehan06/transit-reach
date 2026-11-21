@@ -10,6 +10,7 @@
  */
 import { computeCityCoverage } from './stats';
 import { AppState, CitySummary, MODES, SummaryManifest } from './types';
+import { rankable } from './urban';
 
 const W = 360;
 const H = 220;
@@ -42,7 +43,7 @@ export function renderScatter(
   onPick: (cityId: string) => void
 ): void {
   const pts: Pt[] = [];
-  for (const city of Object.values(manifest.cities)) {
+  for (const city of Object.values(manifest.cities).filter(rankable)) {
     const stations = MODES.reduce((s, m) => s + (state.enabledModes.has(m.code) ? city.station_counts[m.code] || 0 : 0), 0);
     if (stations < 3 || city.ghsl_pop <= 0) continue;
     const pct = computeCityCoverage(city, state.enabledModes, state.distanceM, manifest.bucket_step_m).popPct;

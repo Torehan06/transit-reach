@@ -5,18 +5,55 @@
  * The tool then estimates how many more people would be within the current
  * walking distance of a station.
  *
- * Estimate, clearly labelled as one: the browser has no street graph, so walking
- * distance to a sketched station is straight-line distance × 1.3 (a typical
- * detour factor). Existing coverage uses the real network distances baked into
- * the population dots. Only dots in the tiles currently loaded on the map are
- * counted, so the line should be in view.
+ * The browser has no street graph, so walking distance to a sketched station is
+ * straight-line distance × a detour factor measured from this city's own street
+ * network: population dots near the line carry real network distances to the
+ * existing stations, and comparing them with straight-line distances to those
+ * stations gives the local detour (rivers, rail cuts and superblocks push it up,
+ * dense grids pull it down). Falls back to 1.3 where there are too few nearby
+ * samples. Only dots in the tiles currently loaded on the map are counted.
+ *
+ * A sketch is kept in the URL (sk=<spacing>_<base36 delta-encoded vertices>) so
+ * it can be shared.
  */
 import type { GeoJSONSource } from 'maplibre-gl';
 import { TransitMap, haversineMeters } from './map';
 import { formatCompactPop, formatShortDistance } from './stats';
-import { DistanceUnit, ModeCode } from './types';
+import { DistanceUnit, MODES, ModeCode } from './types';
 
 export const DETOUR_FACTOR = 1.3;
+const COORD_SCALE = 1e4; // ~10 m precision in shared links
+
+/** Encode a sketch for the URL hash. */
+export function encodeSketch(vertices: [number, number][], spacing: number): string {
+  let px = 0;
+  let py = 0;
+  const nums: number[] = [];
+  for (const [lon, lat] of vertices) {
+    const x = Math.round(lon * COORD_SCALE);
+    const y = Math.round(lat * COORD_SCALE);
+    nums.push(x - px, y - py);
+    px = x;
+    py = y;
+  }
+  return `${spacing}_${nums.map((n) => n.toString(36)).join('.')}`;
+}
+
+export function decodeSketch(raw: string): { vertices: [number, number][]; spacing: number } | null {
+  const m = /^(400|800|1600)_([-0-9a-z.]+)$/.exec(raw);
+  if (!m) return null;
+  const nums = m[2].split('.').map((t) => parseInt(t, 36));
+  if (nums.length < 2 || nums.length % 2 || nums.some((n) => !Number.isFinite(n))) return null;
+  const vertices: [number, number][] = [];
+  let x = 0;
+  let y = 0;
+  for (let i = 0; i < nums.length && vertices.length < 60; i += 2) {
+    x += nums[i];
+    y += nums[i + 1];
+    vertices.push([x / COORD_SCALE, y / COORD_SCALE]);
+  }
+  return { vertices, spacing: Number(m[1]) };
+}
 
 export interface ScenarioContext {
   modes: ModeCode[];
@@ -37,10 +74,12 @@ export class Scenario {
   private ctx: ScenarioContext | null = null;
   private recalcTimer: number | null = null;
   private onActiveChange: (active: boolean) => void;
+  private onSketchChange: () => void;
 
-  constructor(tm: TransitMap, onActiveChange: (active: boolean) => void) {
+  constructor(tm: TransitMap, onActiveChange: (active: boolean) => void, onSketchChange: () => void = () => {}) {
     this.tm = tm;
     this.onActiveChange = onActiveChange;
+    this.onSketchChange = onSketchChange;
     this.card = document.getElementById('scenario-card')!;
     this.body = document.getElementById('scenario-body')!;
     this.toggleBtn = document.getElementById('scenario-btn') as HTMLButtonElement;
@@ -55,6 +94,7 @@ export class Scenario {
       this.redraw();
     });
     document.getElementById('scenario-done')!.addEventListener('click', () => this.stop());
+    document.getElementById('scenario-share')?.addEventListener('click', () => void this.share());
     this.card.querySelectorAll<HTMLButtonElement>('[data-spacing]').forEach((b) =>
       b.addEventListener('click', () => {
         this.spacing = Number(b.dataset.spacing);
@@ -69,6 +109,47 @@ export class Scenario {
 
   public isActive(): boolean {
     return this.active;
+  }
+
+  /** URL hash value for the current sketch, or null when there is nothing to share. */
+  public shareParam(): string | null {
+    return this.active && this.vertices.length >= 2 ? encodeSketch(this.vertices, this.spacing) : null;
+  }
+
+  /** Restore a shared sketch and frame it. */
+  public load(vertices: [number, number][], spacing: number): void {
+    this.spacing = spacing;
+    this.start();
+    this.vertices = vertices.slice();
+    const lons = vertices.map((v) => v[0]);
+    const lats = vertices.map((v) => v[1]);
+    this.tm.map.fitBounds(
+      [
+        [Math.min(...lons), Math.min(...lats)],
+        [Math.max(...lons), Math.max(...lats)],
+      ],
+      { padding: { top: 260, bottom: 140, left: 40, right: 40 }, maxZoom: 13.5, duration: 0, bearing: this.tm.map.getBearing() }
+    );
+    this.redraw();
+  }
+
+  private async share(): Promise<void> {
+    this.onSketchChange();
+    const url = window.location.href;
+    const btn = document.getElementById('scenario-share');
+    try {
+      if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+        await navigator.share({ title: 'Transit Reach: my line', url });
+        return;
+      }
+      await navigator.clipboard.writeText(url);
+      if (btn) {
+        btn.textContent = 'Link copied';
+        window.setTimeout(() => (btn.textContent = 'Share'), 1600);
+      }
+    } catch {
+      /* user cancelled share sheet or clipboard blocked */
+    }
   }
 
   /** Start sketching, optionally with a first point (e.g. from a "biggest gap"). */
@@ -97,6 +178,7 @@ export class Scenario {
     this.tm.map.getCanvas().style.cursor = '';
     this.setData([], []);
     this.onActiveChange(false);
+    this.onSketchChange();
   }
 
   public update(ctx: ScenarioContext): void {
@@ -180,6 +262,8 @@ export class Scenario {
     this.card.querySelectorAll<HTMLButtonElement>('[data-spacing]').forEach((b) =>
       b.classList.toggle('active', Number(b.dataset.spacing) === this.spacing)
     );
+    document.getElementById('scenario-share')?.classList.toggle('hidden', this.vertices.length < 2);
+    this.onSketchChange();
     this.scheduleRecalc();
   }
 
@@ -205,7 +289,8 @@ export class Scenario {
     }
 
     const { dots, peoplePerDot } = this.tm.queryDots();
-    const reachStraight = ctx.distanceM / DETOUR_FACTOR;
+    const detour = this.localDetour(dots, stations);
+    const reachStraight = ctx.distanceM / detour.factor;
     // Prefilter with a lat/lon box around the stations.
     const latPad = reachStraight / 111_000;
     const lats = stations.map((s) => s[1]);
@@ -246,7 +331,63 @@ export class Scenario {
         <span>${formatCompactPop(perStation)} new people / station</span>
         <span>${Math.round(overlap * 100)}% of its catchment already served</span>
       </div>
-      <p class="scenario-note">Estimate: walking = straight line × ${DETOUR_FACTOR}; counts population dots loaded on screen (1 dot = ${peoplePerDot} people).${coarse}</p>`;
+      <p class="scenario-note">Estimate: walking = straight line × ${detour.factor.toFixed(2)} ${
+        detour.samples ? `(detour measured from ${detour.samples} real street walks ${detour.scope})` : '(typical detour; too few nearby stations to measure it here)'
+      }; counts population dots loaded on screen (1 dot = ${peoplePerDot} people).${coarse}</p>`;
+  }
+
+  /**
+   * Street-network detour factor around the sketch: for population dots within
+   * ~3 km of the sketched stations, compare each dot's real walking distance to
+   * its nearest existing station (baked into the tiles) with the straight-line
+   * distance to the nearest station of that mode. Median, clamped to [1.05, 2].
+   * Slightly conservative: the straight-line nearest station can differ from
+   * the network-nearest one, which only ever raises the ratio.
+   */
+  private localDetour(
+    dots: { lon: number; lat: number; props: Record<string, unknown> }[],
+    sketch: [number, number][]
+  ): { factor: number; samples: number; scope: string } {
+    const all = this.tm.getStations();
+    if (!all.length || !dots.length) return { factor: DETOUR_FACTOR, samples: 0, scope: '' };
+    const near = (lon: number, lat: number) => sketch.some((s) => haversineMeters(lon, lat, s[0], s[1]) < 3000);
+    const local = this.detourFrom(dots.filter((d) => near(d.lon, d.lat)), all);
+    if (local.samples >= 25) return { ...local, scope: 'nearby' };
+    const wide = this.detourFrom(dots, all);
+    if (wide.samples >= 25) return { ...wide, scope: 'in view' };
+    return { factor: DETOUR_FACTOR, samples: 0, scope: '' };
+  }
+
+  private detourFrom(
+    cand: { lon: number; lat: number; props: Record<string, unknown> }[],
+    all: ReturnType<TransitMap['getStations']>
+  ): { factor: number; samples: number } {
+    // Evenly thin to at most ~600 dots to keep this cheap.
+    const step = Math.max(1, Math.floor(cand.length / 600));
+    const ratios: number[] = [];
+    for (let i = 0; i < cand.length; i += step) {
+      const d = cand[i];
+      let best = Infinity;
+      let bestStraight = Infinity;
+      for (const m of MODES) {
+        const net = Number(d.props[m.distProp]);
+        if (!Number.isFinite(net) || net <= 0 || net > 2500) continue;
+        let straight = Infinity;
+        for (const st of all) {
+          if (st.mode !== m.code) continue;
+          const h = haversineMeters(d.lon, d.lat, st.lon, st.lat);
+          if (h < straight) straight = h;
+        }
+        if (net < best) {
+          best = net;
+          bestStraight = straight;
+        }
+      }
+      if (best < Infinity && bestStraight >= 150 && bestStraight < 2500) ratios.push(best / bestStraight);
+    }
+    if (ratios.length < 25) return { factor: DETOUR_FACTOR, samples: ratios.length };
+    ratios.sort((a, b) => a - b);
+    const med = ratios[Math.floor(ratios.length / 2)];
+    return { factor: Math.min(2, Math.max(1.05, med)), samples: ratios.length };
   }
 }
-

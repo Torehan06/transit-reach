@@ -5,6 +5,15 @@ Usage:
     .venv/bin/python pipeline/build_city.py ankara istanbul new-york
     .venv/bin/python pipeline/build_city.py --all
     .venv/bin/python pipeline/build_city.py --all --skip-existing
+    .venv/bin/python pipeline/build_city.py --all --uc-only   # urban-centre stats only
+
+Urban centres: pipeline/ucdb_cities.json maps each city to the GHS-UCDB R2024A
+urban centre (EC JRC, CC BY 4.0) containing it. After the city itself is built,
+a second, stats-only pass computes coverage curves over that urban centre so
+cities can be compared on one definition of "the city". Several cities can share
+one urban centre (Tokyo/Yokohama/Kawasaki); it is computed once, for the most
+populous of them, and the others point to it. Results go to summary_uc.json,
+which the site loads only when the urban-area view is switched on.
 """
 
 from __future__ import annotations
@@ -33,6 +42,9 @@ PUBLIC_DATA = ROOT_DIR / "public" / "data"
 TILES_DIR = PUBLIC_DATA / "tiles"
 STATIONS_DIR = PUBLIC_DATA / "stations"
 SUMMARY_PATH = PUBLIC_DATA / "summary.json"
+SUMMARY_UC_PATH = PUBLIC_DATA / "summary_uc.json"
+UCDB_CITIES = Path(__file__).resolve().parent / "ucdb_cities.json"
+UC_PAD_DEG = 0.06  # > 3.5 km street/station buffer around the urban centre
 
 MAX_SITE_BYTES = 1024 * 1024 * 1024  # 1 GB GitHub Pages limit
 
@@ -42,10 +54,24 @@ def load_cities_config() -> List[Dict[str, Any]]:
         return json.load(f)
 
 
+def load_ucdb() -> Dict[str, Any]:
+    if UCDB_CITIES.exists():
+        with open(UCDB_CITIES, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+
 def load_summary() -> Dict[str, Any]:
     if SUMMARY_PATH.exists():
         with open(SUMMARY_PATH, "r", encoding="utf-8") as f:
-            return json.load(f)
+            summary = json.load(f)
+        if SUMMARY_UC_PATH.exists():
+            with open(SUMMARY_UC_PATH, "r", encoding="utf-8") as f:
+                uc = json.load(f).get("cities", {})
+            for cid, val in uc.items():
+                if cid in summary["cities"]:
+                    summary["cities"][cid]["uc"] = val
+        return summary
     return {
         "bucket_step_m": BUCKET_STEP_M,
         "max_bucket_m": MAX_BUCKET_M,
@@ -68,10 +94,19 @@ def save_summary(summary: Dict[str, Any], ordered_ids: List[str]) -> None:
     summary["max_bucket_m"] = MAX_BUCKET_M
     summary["cities"] = ordered_cities
 
-    tmp_path = SUMMARY_PATH.with_suffix(".json.tmp")
-    with open(tmp_path, "w", encoding="utf-8") as f:
-        json.dump(summary, f, separators=(",", ":"), ensure_ascii=False)
-    tmp_path.rename(SUMMARY_PATH)
+    # Urban-centre stats live in their own file so the default page load stays small.
+    main = dict(summary)
+    main["cities"] = {cid: {k: v for k, v in val.items() if k != "uc"} for cid, val in ordered_cities.items()}
+    uc = {cid: val["uc"] for cid, val in ordered_cities.items() if val.get("uc")}
+    main["has_uc"] = any("pop_curves" in v for v in uc.values())
+    for path, payload in (
+        (SUMMARY_PATH, main),
+        (SUMMARY_UC_PATH, {"source": "GHS-UCDB R2024A (EC JRC, CC BY 4.0)", "cities": uc}),
+    ):
+        tmp_path = path.with_suffix(".json.tmp")
+        with open(tmp_path, "w", encoding="utf-8") as f:
+            json.dump(payload, f, separators=(",", ":"), ensure_ascii=False)
+        tmp_path.rename(path)
 
 
 def total_data_size_bytes() -> int:
@@ -213,6 +248,95 @@ def build_one_city(city: Dict[str, Any]) -> Dict[str, Any]:
             shutil.rmtree(city_tmp, ignore_errors=True)
 
 
+def uc_primary(cid: str, ucdb: Dict[str, Any], by_id: Dict[str, Dict[str, Any]]) -> str:
+    """The city that carries the stats for a shared urban centre: the most populous one."""
+    uid = ucdb[cid]["uc_id"]
+    sharers = [k for k, v in ucdb.items() if v and v["uc_id"] == uid and k in by_id]
+    return max(sharers, key=lambda k: (by_id[k]["official_pop"], k))
+
+
+def build_uc_stats(city: Dict[str, Any], uc: Dict[str, Any]) -> Dict[str, Any]:
+    """Stats-only pass over the city's GHS-UCDB urban centre (no tiles, no dots)."""
+    from shapely.geometry import shape
+    from shapely.prepared import prep
+
+    t0 = time.time()
+    geom = shape(uc["geom"])
+    minx, miny, maxx, maxy = geom.bounds
+    ucity = dict(city)
+    ucity["id"] = f"{city['id']}__uc"
+    ucity["bbox"] = [
+        round(min(minx - UC_PAD_DEG, city["bbox"][0]), 4),
+        round(min(miny - UC_PAD_DEG, city["bbox"][1]), 4),
+        round(max(maxx + UC_PAD_DEG, city["bbox"][2]), 4),
+        round(max(maxy + UC_PAD_DEG, city["bbox"][3]), 4),
+    ]
+    ucity["boundary"] = {"geojson": uc["geom"]}
+    print(f"  [UC] {uc['uc_name']} ({uc['uc_km2']:.0f} km², UCDB pop {uc['uc_pop']:,})")
+    osm_data = extract_city_osm(ucity, CACHE_DIR)
+    routing = compute_walking_distances(
+        node_xy=osm_data.node_xy,
+        edge_u=osm_data.edge_u,
+        edge_v=osm_data.edge_v,
+        edge_len=osm_data.edge_len,
+        stations=osm_data.stations,
+    )
+    pop_res = process_population(
+        boundary_wgs84=osm_data.boundary_wgs84,
+        utm_crs=osm_data.utm_crs,
+        routing=routing,
+        cache_dir=CACHE_DIR / "ghsl",
+        dots_geojsonseq_path=None,
+    )
+    pg = prep(geom)
+    from shapely.geometry import Point
+    counts = {m: 0 for m in MODES}
+    for st in osm_data.stations:
+        if pg.contains(Point(st.lon, st.lat)):
+            counts[st.mode] += 1
+    all_mask = str(pop_res.available_modes_mask)
+    pct = 0.0
+    if all_mask in pop_res.pop_curves and pop_res.total_pop > 0:
+        pct = pop_res.pop_curves[all_mask][1600 // BUCKET_STEP_M] / pop_res.total_pop * 100
+    print(
+        f"  [UC] pop {pop_res.total_pop:,.0f}, {sum(counts.values())} stations, 1-mile {pct:.1f}%, "
+        f"street coverage {pop_res.snapped_pop_share * 100:.1f}% ({time.time() - t0:.1f}s)"
+    )
+    return {
+        "uc_id": uc["uc_id"],
+        "name": uc["uc_name"],
+        "ghsl_pop": int(round(pop_res.total_pop)),
+        "area_km2": pop_res.area_km2,
+        "land_cells": pop_res.total_land_cells,
+        "station_counts": counts,
+        "available_modes_mask": pop_res.available_modes_mask,
+        "pop_curves": pop_res.pop_curves,
+        "area_curves": pop_res.area_curves,
+        "street_share": round(pop_res.snapped_pop_share, 4),
+        "geom": uc["geom"],
+    }
+
+
+def add_uc(entry: Dict[str, Any], city: Dict[str, Any], ucdb: Dict[str, Any], by_id: Dict[str, Dict[str, Any]]) -> None:
+    """Attach urban-centre stats (or a pointer to the city that carries them) to a summary entry."""
+    uc = ucdb.get(city["id"])
+    if not uc:
+        entry.pop("uc", None)
+        return
+    primary = uc_primary(city["id"], ucdb, by_id)
+    if primary != city["id"]:
+        entry["uc"] = {"uc_id": uc["uc_id"], "name": uc["uc_name"], "same_as": primary}
+        print(f"  [UC] shares {uc['uc_name']} with {primary}")
+        return
+    try:
+        entry["uc"] = build_uc_stats(city, uc)
+    except Exception as exc:  # never lose the city build over the urban-centre pass
+        print(f"  [UC][ERROR] {city['id']}: {exc}", file=sys.stderr)
+    finally:
+        shutil.rmtree(TMP_DIR / f"{city['id']}__uc", ignore_errors=True)
+        (CACHE_DIR / "pbf" / f"city_{city['id']}__uc.osm.pbf").unlink(missing_ok=True)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build Transit Reach city data & PMTiles.")
     parser.add_argument("cities", nargs="*", help="City IDs to build")
@@ -220,6 +344,8 @@ def main() -> None:
     parser.add_argument("--skip-existing", action="store_true", help="Skip cities with existing PMTiles & summary")
     parser.add_argument("--cleanup", action="store_true", help="Delete cached city PBFs after building to save disk space")
     parser.add_argument("--continue-on-error", action="store_true", help="Keep building remaining cities if one fails")
+    parser.add_argument("--uc-only", action="store_true", help="Only (re)compute urban-centre stats for already-built cities")
+    parser.add_argument("--no-uc", action="store_true", help="Skip the urban-centre pass")
     args = parser.parse_args()
 
     all_cities = load_cities_config()
@@ -239,15 +365,28 @@ def main() -> None:
         sys.exit(1)
 
     summary = load_summary()
+    ucdb = load_ucdb()
     failures: List[str] = []
 
     for idx, city in enumerate(targets):
         cid = city["id"]
-        if args.skip_existing and (TILES_DIR / f"{cid}.pmtiles").exists() and cid in summary["cities"]:
+        if not args.uc_only and args.skip_existing and (TILES_DIR / f"{cid}.pmtiles").exists() and cid in summary["cities"]:
             print(f"Skipping {cid} (already built)")
             continue
         try:
-            entry = build_one_city(city)
+            if args.uc_only:
+                if cid not in summary["cities"]:
+                    print(f"Skipping {cid} (not built yet)")
+                    continue
+                if args.skip_existing and summary["cities"][cid].get("uc"):
+                    print(f"Skipping {cid} (urban centre done)")
+                    continue
+                print(f"\n=== {city['name']} ({cid}) urban centre ===")
+                entry = summary["cities"][cid]
+            else:
+                entry = build_one_city(city)
+            if not args.no_uc:
+                add_uc(entry, city, ucdb, by_id)
             summary["cities"][cid] = entry
             save_summary(summary, ordered_ids)
         except Exception as exc:

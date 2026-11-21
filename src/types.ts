@@ -41,6 +41,10 @@ export interface CitySummary {
   area_curves: Record<string, number[]>;
   pmtiles_mb: number;
   data_warning?: string;
+  /** Urban-area view only: this city's urban centre is carried by another city. */
+  uc_shared_with?: string;
+  /** Urban-area view only: no urban centre data, admin stats shown instead. */
+  uc_missing?: boolean;
 }
 
 export interface SummaryManifest {
@@ -48,6 +52,8 @@ export interface SummaryManifest {
   max_bucket_m: number;
   modes: ModeCode[];
   cities: Record<string, CitySummary>;
+  /** summary_uc.json exists (urban-area view available). */
+  has_uc?: boolean;
 }
 
 /** Compact tuple stored in public/data/stations/<city>.json: [id, mode, name, lon, lat, inside] */
@@ -71,6 +77,8 @@ export interface AppState {
   enabledModes: Set<ModeCode>;
   showDots: boolean;
   showStations: boolean;
+  /** 'city' = administrative limits, 'urban' = GHS-UCDB urban centre. */
+  area: 'city' | 'urban';
 }
 
 export interface CoverageStats {

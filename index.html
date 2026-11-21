@@ -25,7 +25,7 @@
           <select id="mobile-city-select" class="pill-select" aria-label="Select city"></select>
         </label>
         <div class="mobile-kpis">
-          <span class="mini-kpi"><strong id="mobile-pop-pct">—</strong> pop</span>
+          <span class="mini-kpi"><strong id="mobile-pop-pct">—</strong> pop<span class="urban-tag"> · urban</span></span>
           <span class="mini-kpi"><strong id="mobile-area-pct">—</strong> area</span>
         </div>
         <button id="mobile-compare-btn" class="icon-btn" type="button" title="Compare cities" aria-label="Compare cities">
@@ -58,6 +58,10 @@
           <div class="city-select-wrap">
             <label for="city-select" class="sr-only">City</label>
             <select id="city-select" class="city-select"></select>
+          </div>
+          <div class="seg-toggle area-toggle" role="group" aria-label="Boundary used for the statistics">
+            <button type="button" class="seg-btn active" data-area="city" aria-pressed="true">City limits</button>
+            <button type="button" class="seg-btn" data-area="urban" aria-pressed="false">Urban area</button>
           </div>
           <p id="city-boundary-note" class="boundary-note"></p>
           <p id="city-data-warning" class="data-warning hidden" role="note"></p>
@@ -194,6 +198,7 @@
         <div class="scenario-actions">
           <button id="scenario-undo" class="text-btn" type="button">Undo</button>
           <button id="scenario-clear" class="text-btn" type="button">Clear</button>
+          <button id="scenario-share" class="text-btn hidden" type="button">Share</button>
           <button id="scenario-done" class="text-btn strong" type="button">Done</button>
         </div>
       </div>

@@ -7,6 +7,7 @@ import {
 import { CONTINENTS, continentOf, fillCitySelect } from './regions';
 import { closeInShare } from './reach';
 import { renderScatter } from './scatter';
+import { rankable } from './urban';
 import { AppState, CitySummary, CoverageStats, MODES, SummaryManifest } from './types';
 
 type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'closeIn' | 'stations' | 'name';
@@ -68,6 +69,12 @@ export class CompareModal {
       this.sortKey = this.sortSelect.value as SortKey;
       this.renderTable();
     });
+  }
+
+  /** Swap the stats source (city limits vs urban areas) without resetting the UI. */
+  public setManifest(manifest: SummaryManifest): void {
+    this.manifest = manifest;
+    if (!this.backdrop.classList.contains('hidden')) this.render();
   }
 
   public init(manifest: SummaryManifest): void {
@@ -216,6 +223,7 @@ export class CompareModal {
     if (!this.manifest || !this.state) return;
 
     const rows: RowData[] = Object.values(this.manifest.cities)
+      .filter(rankable)
       .filter((c) => this.activeRegion === 'All' || continentOf(c) === this.activeRegion)
       .map((city) => ({
         city,
