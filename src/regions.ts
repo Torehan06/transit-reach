@@ -7,7 +7,7 @@ import { CitySummary } from './types';
  * the grouping is derived here in the frontend instead. That way, changing a
  * group never requires re-running the pipeline.
  */
-export const CONTINENTS = ['Europe', 'Asia', 'North America', 'South America', 'Oceania'] as const;
+export const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South America', 'Oceania'] as const;
 export type Continent = (typeof CONTINENTS)[number];
 
 const COUNTRY_CONTINENT: Record<string, Continent> = {
@@ -16,11 +16,15 @@ const COUNTRY_CONTINENT: Record<string, Continent> = {
   Belgium: 'Europe',
   Czechia: 'Europe',
   Denmark: 'Europe',
+  Finland: 'Europe',
   France: 'Europe',
   Germany: 'Europe',
   Greece: 'Europe',
+  Hungary: 'Europe',
+  Ireland: 'Europe',
   Italy: 'Europe',
   Netherlands: 'Europe',
+  Norway: 'Europe',
   Poland: 'Europe',
   Portugal: 'Europe',
   Russia: 'Europe',
@@ -34,13 +38,37 @@ const COUNTRY_CONTINENT: Record<string, Continent> = {
   Georgia: 'Asia',
   'Hong Kong': 'Asia',
   India: 'Asia',
+  Indonesia: 'Asia',
+  Iran: 'Asia',
+  Iraq: 'Asia',
+  Israel: 'Asia',
   Japan: 'Asia',
   Kazakhstan: 'Asia',
+  Malaysia: 'Asia',
+  Philippines: 'Asia',
+  Qatar: 'Asia',
+  'Saudi Arabia': 'Asia',
   Singapore: 'Asia',
   'South Korea': 'Asia',
   Taiwan: 'Asia',
+  Thailand: 'Asia',
   Türkiye: 'Asia',
   'United Arab Emirates': 'Asia',
+  // Africa
+  Algeria: 'Africa',
+  Angola: 'Africa',
+  "Côte d'Ivoire": 'Africa',
+  'DR Congo': 'Africa',
+  Egypt: 'Africa',
+  Ethiopia: 'Africa',
+  Ghana: 'Africa',
+  Kenya: 'Africa',
+  Morocco: 'Africa',
+  Nigeria: 'Africa',
+  Senegal: 'Africa',
+  'South Africa': 'Africa',
+  Tanzania: 'Africa',
+  Tunisia: 'Africa',
   // North America
   Canada: 'North America',
   Mexico: 'North America',
@@ -49,8 +77,11 @@ const COUNTRY_CONTINENT: Record<string, Continent> = {
   Argentina: 'South America',
   Brazil: 'South America',
   Chile: 'South America',
+  Colombia: 'South America',
+  Peru: 'South America',
   // Oceania
   Australia: 'Oceania',
+  'New Zealand': 'Oceania',
 };
 
 // Istanbul's historic core, most of its population, and most of its rail network

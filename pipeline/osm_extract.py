@@ -182,6 +182,10 @@ def ensure_city_pbf(city: Dict[str, Any], cache_dir: Path) -> Path:
             "-b",
             bbox_str,
             "--strategy=smart",
+            # Also complete boundary relations (not just multipolygons), so city
+            # boundaries that cross the clip bbox can still be assembled.
+            "-S",
+            "types=multipolygon,boundary",
             "--overwrite",
             "-o",
             str(tmp_slice),

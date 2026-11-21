@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 env:
-  DATA_RELEASE_TAG: data-v2
+  DATA_RELEASE_TAG: data-v3
   DATA_ARCHIVE_NAME: transit-reach-data.tar
 
 permissions:
