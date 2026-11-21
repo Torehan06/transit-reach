@@ -1,0 +1,604 @@
+[
+  {
+    "id": "ankara",
+    "name": "Ankara",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 5080000,
+    "boundary_desc": "8 central urban districts (Altındağ, Çankaya, Etimesgut, Keçiören, Mamak, Pursaklar, Sincan, Yenimahalle)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [31.95, 39.55, 33.30, 40.30],
+    "boundary": {
+      "admin_level": "6",
+      "names": ["Altındağ", "Çankaya", "Etimesgut", "Keçiören", "Mamak", "Pursaklar", "Sincan", "Yenimahalle"]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "istanbul",
+    "name": "Istanbul",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 15360000,
+    "boundary_desc": "36 urban districts of Istanbul Province (excluding outlying rural Çatalca, Silivri, and Şile)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [28.20, 40.75, 29.58, 41.40],
+    "boundary": {
+      "admin_level": "6",
+      "names": [
+        "Adalar", "Arnavutköy", "Ataşehir", "Avcılar", "Bağcılar", "Bahçelievler", "Bakırköy",
+        "Başakşehir", "Bayrampaşa", "Beşiktaş", "Beykoz", "Beylikdüzü", "Beyoğlu", "Büyükçekmece",
+        "Çekmeköy", "Esenler", "Esenyurt", "Eyüpsultan", "Fatih", "Gaziosmanpaşa", "Güngören",
+        "Kadıköy", "Kağıthane", "Kartal", "Küçükçekmece", "Maltepe", "Pendik", "Sancaktepe",
+        "Sarıyer", "Sultanbeyli", "Sultangazi", "Şişli", "Tuzla", "Ümraniye", "Üsküdar", "Zeytinburnu"
+      ]
+    },
+    "mode_overrides": {
+      "brt_match": [
+        { "network": "^Metrob[üu]s$" },
+        { "network:wikidata": "^Q603319$" }
+      ]
+    }
+  },
+  {
+    "id": "izmir",
+    "name": "İzmir",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 2970000,
+    "boundary_desc": "11 central urban districts (Balçova, Bayraklı, Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, Konak, Narlıdere)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [26.72, 38.20, 27.45, 38.62],
+    "boundary": {
+      "relation_ids": [1269253, 1268481, 1269252, 1269254, 1268482, 1269251, 1269194, 1269256, 1268483, 1269255, 1269257]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "bursa",
+    "name": "Bursa",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 2150000,
+    "boundary_desc": "3 central urban districts (Nilüfer, Osmangazi, Yıldırım)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [28.60, 40.00, 29.40, 40.42],
+    "boundary": {
+      "relation_ids": [1273952, 1273954, 1273955]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "eskisehir",
+    "name": "Eskişehir",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 795000,
+    "boundary_desc": "2 central urban districts (Odunpazarı, Tepebaşı)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [29.95, 39.42, 31.05, 40.15],
+    "boundary": {
+      "relation_ids": [1238924, 1687970]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "konya",
+    "name": "Konya",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 1430000,
+    "boundary_desc": "3 central urban districts (Karatay, Meram, Selçuklu)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [31.90, 37.35, 33.40, 38.45],
+    "boundary": {
+      "relation_ids": [1250951, 1250958, 1250972]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "kayseri",
+    "name": "Kayseri",
+    "country": "Türkiye",
+    "region": "Türkiye",
+    "official_pop": 1180000,
+    "boundary_desc": "3 central urban districts (Kocasinan, Melikgazi, Talas)",
+    "pbf": { "source": "geofabrik", "path": "europe/turkey/turkey-latest.osm.pbf" },
+    "bbox": [34.90, 38.45, 36.15, 39.20],
+    "boundary": {
+      "relation_ids": [1797400, 1797146, 1797260]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "almaty",
+    "name": "Almaty",
+    "country": "Kazakhstan",
+    "region": "Kazakhstan",
+    "official_pop": 2250000,
+    "boundary_desc": "City of Almaty (City of Republican Significance)",
+    "pbf": { "source": "geofabrik", "path": "asia/kazakhstan/kazakhstan-latest.osm.pbf" },
+    "bbox": [76.68, 42.98, 77.22, 43.46],
+    "boundary": { "relation_ids": [2465058] },
+    "mode_overrides": {
+      "brt_match": [
+        { "network": "Almaty BRT" },
+        { "name": "\\bBRT\\b" }
+      ]
+    }
+  },
+  {
+    "id": "astana",
+    "name": "Astana",
+    "country": "Kazakhstan",
+    "region": "Kazakhstan",
+    "official_pop": 1480000,
+    "boundary_desc": "City of Astana (City of Republican Significance)",
+    "pbf": { "source": "geofabrik", "path": "asia/kazakhstan/kazakhstan-latest.osm.pbf" },
+    "bbox": [71.15, 50.95, 71.85, 51.40],
+    "boundary": { "relation_ids": [3087155] },
+    "mode_overrides": {
+      "include_construction": [
+        { "mode": "t", "network": "Astana LRT|Tarlan Astana" },
+        { "mode": "t", "name": "LRT|ЛРТ|Tarlan" },
+        { "mode": "t", "construction": "light_rail|station" },
+        { "mode": "t", "construction:railway": "station|halt" }
+      ],
+      "reclassify": [
+        { "from": "m", "to": "t" }
+      ],
+      "exclude_stations": [
+        { "name": "extension|Qosshy" }
+      ]
+    }
+  },
+  {
+    "id": "shymkent",
+    "name": "Shymkent",
+    "country": "Kazakhstan",
+    "region": "Kazakhstan",
+    "official_pop": 1240000,
+    "boundary_desc": "City of Shymkent (City of Republican Significance)",
+    "pbf": { "source": "geofabrik", "path": "asia/kazakhstan/kazakhstan-latest.osm.pbf" },
+    "bbox": [69.05, 41.95, 70.20, 42.68],
+    "boundary": { "relation_ids": [3389772] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "amsterdam",
+    "name": "Amsterdam",
+    "country": "Netherlands",
+    "region": "Europe",
+    "official_pop": 931000,
+    "boundary_desc": "Municipality of Amsterdam (Gemeente Amsterdam)",
+    "pbf": { "source": "bbbike", "name": "Amsterdam" },
+    "bbox": [4.68, 52.26, 5.12, 52.45],
+    "boundary": { "admin_level": "8", "names": ["Amsterdam"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "london",
+    "name": "London",
+    "country": "United Kingdom",
+    "region": "Europe",
+    "official_pop": 8950000,
+    "boundary_desc": "Greater London (32 boroughs and City of London)",
+    "pbf": { "source": "geofabrik", "path": "europe/united-kingdom/england/greater-london/greater-london-latest.osm.pbf" },
+    "bbox": [-0.56, 51.25, 0.38, 51.73],
+    "boundary": { "admin_level": ["5", "6"], "names": ["Greater London"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "paris",
+    "name": "Paris",
+    "country": "France",
+    "region": "Europe",
+    "official_pop": 2103000,
+    "boundary_desc": "City of Paris (Ville de Paris, 20 arrondissements)",
+    "pbf": { "source": "bbbike", "name": "Paris" },
+    "bbox": [2.18, 48.78, 2.52, 48.94],
+    "boundary": { "admin_level": "8", "names": ["Paris"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "brussels",
+    "name": "Brussels",
+    "country": "Belgium",
+    "region": "Europe",
+    "official_pop": 1250000,
+    "boundary_desc": "Brussels-Capital Region (19 municipalities)",
+    "pbf": { "source": "bbbike", "name": "Bruessel" },
+    "bbox": [4.22, 50.74, 4.52, 50.94],
+    "boundary": {
+      "admin_level": "4",
+      "names": ["Région de Bruxelles-Capitale - Brussels Hoofdstedelijk Gewest", "Brussels-Capital Region", "Région de Bruxelles-Capitale"]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "berlin",
+    "name": "Berlin",
+    "country": "Germany",
+    "region": "Europe",
+    "official_pop": 3782000,
+    "boundary_desc": "State of Berlin (Land Berlin)",
+    "pbf": { "source": "bbbike", "name": "Berlin" },
+    "bbox": [13.02, 52.30, 13.82, 52.72],
+    "boundary": { "admin_level": "4", "names": ["Berlin"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "munich",
+    "name": "Munich",
+    "country": "Germany",
+    "region": "Europe",
+    "official_pop": 1510000,
+    "boundary_desc": "City of Munich (Stadt München)",
+    "pbf": { "source": "bbbike", "name": "Muenchen" },
+    "bbox": [11.30, 48.02, 11.78, 48.29],
+    "boundary": { "admin_level": "6", "names": ["München"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "hamburg",
+    "name": "Hamburg",
+    "country": "Germany",
+    "region": "Europe",
+    "official_pop": 1910000,
+    "boundary_desc": "Free and Hanseatic City of Hamburg (mainland & Elbe, excluding offshore Neuwerk)",
+    "pbf": { "source": "geofabrik", "path": "europe/germany/hamburg/hamburg-latest.osm.pbf" },
+    "bbox": [8.05, 53.35, 10.38, 54.05],
+    "boundary": {
+      "admin_level": "4",
+      "names": ["Hamburg"],
+      "clip_bbox": [9.65, 53.38, 10.35, 53.76]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "frankfurt",
+    "name": "Frankfurt",
+    "country": "Germany",
+    "region": "Europe",
+    "official_pop": 775000,
+    "boundary_desc": "City of Frankfurt am Main (Stadt Frankfurt am Main)",
+    "pbf": { "source": "bbbike", "name": "Frankfurt" },
+    "bbox": [8.44, 49.98, 8.86, 50.26],
+    "boundary": { "admin_level": "6", "names": ["Frankfurt am Main"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "vienna",
+    "name": "Vienna",
+    "country": "Austria",
+    "region": "Europe",
+    "official_pop": 2006000,
+    "boundary_desc": "City and State of Vienna (Stadt Wien, 23 districts)",
+    "pbf": { "source": "bbbike", "name": "Wien" },
+    "bbox": [16.12, 48.08, 16.64, 48.36],
+    "boundary": { "admin_level": "4", "names": ["Wien"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "zurich",
+    "name": "Zurich",
+    "country": "Switzerland",
+    "region": "Europe",
+    "official_pop": 434000,
+    "boundary_desc": "City of Zurich (Stadt Zürich)",
+    "pbf": { "source": "bbbike", "name": "Zuerich" },
+    "bbox": [8.40, 47.29, 8.66, 47.48],
+    "boundary": { "admin_level": "8", "names": ["Zürich"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "madrid",
+    "name": "Madrid",
+    "country": "Spain",
+    "region": "Europe",
+    "official_pop": 3422000,
+    "boundary_desc": "Municipality of Madrid (Municipio de Madrid)",
+    "pbf": { "source": "geofabrik", "path": "europe/spain/madrid/madrid-latest.osm.pbf" },
+    "bbox": [-3.94, 40.28, -3.48, 40.68],
+    "boundary": { "admin_level": "8", "names": ["Madrid"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "barcelona",
+    "name": "Barcelona",
+    "country": "Spain",
+    "region": "Europe",
+    "official_pop": 1702000,
+    "boundary_desc": "Municipality of Barcelona (Municipi de Barcelona)",
+    "pbf": { "source": "bbbike", "name": "Barcelona" },
+    "bbox": [2.00, 41.29, 2.28, 41.51],
+    "boundary": { "admin_level": "8", "names": ["Barcelona"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "copenhagen",
+    "name": "Copenhagen",
+    "country": "Denmark",
+    "region": "Europe",
+    "official_pop": 765000,
+    "boundary_desc": "Copenhagen and Frederiksberg municipalities (Frederiksberg enclave included)",
+    "pbf": { "source": "geofabrik", "path": "europe/denmark/denmark-latest.osm.pbf" },
+    "bbox": [12.35, 55.55, 12.82, 55.80],
+    "boundary": { "admin_level": "7", "names": ["Københavns Kommune", "Frederiksberg Kommune", "København", "Frederiksberg"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "stockholm",
+    "name": "Stockholm",
+    "country": "Sweden",
+    "region": "Europe",
+    "official_pop": 990000,
+    "boundary_desc": "City of Stockholm (Stockholms kommun)",
+    "pbf": { "source": "bbbike", "name": "Stockholm" },
+    "bbox": [17.70, 59.20, 18.28, 59.45],
+    "boundary": { "admin_level": "7", "names": ["Stockholms kommun", "Stockholm"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "new-york",
+    "name": "New York",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 8478000,
+    "boundary_desc": "New York City (5 boroughs: Manhattan, Brooklyn, Queens, The Bronx, Staten Island)",
+    "pbf": { "source": "bbbike", "name": "NewYork" },
+    "bbox": [-74.32, 40.48, -73.67, 40.95],
+    "boundary": { "relation_ids": [175905] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "chicago",
+    "name": "Chicago",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 2721000,
+    "boundary_desc": "City of Chicago",
+    "pbf": { "source": "bbbike", "name": "Chicago" },
+    "bbox": [-87.98, 41.64, -87.48, 42.06],
+    "boundary": { "admin_level": "8", "names": ["Chicago"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "boston",
+    "name": "Boston",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 673000,
+    "boundary_desc": "City of Boston",
+    "pbf": { "source": "bbbike", "name": "CambridgeMa" },
+    "bbox": [-71.24, 42.20, -70.88, 42.44],
+    "boundary": { "admin_level": "8", "names": ["Boston"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "name": "Silver Line" },
+        { "ref": "^SL[1-5]$" }
+      ]
+    }
+  },
+  {
+    "id": "washington-dc",
+    "name": "Washington DC",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 702000,
+    "boundary_desc": "District of Columbia",
+    "pbf": { "source": "bbbike", "name": "WashingtonDC" },
+    "bbox": [-77.18, 38.78, -76.86, 39.03],
+    "boundary": { "admin_level": ["4", "6", "8"], "names": ["District of Columbia", "Washington"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "philadelphia",
+    "name": "Philadelphia",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 1574000,
+    "boundary_desc": "City and County of Philadelphia",
+    "pbf": { "source": "geofabrik", "path": "north-america/us/pennsylvania/pennsylvania-latest.osm.pbf" },
+    "bbox": [-75.34, 39.83, -74.91, 40.18],
+    "boundary": { "admin_level": "8", "names": ["Philadelphia"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "san-francisco",
+    "name": "San Francisco",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 828000,
+    "boundary_desc": "City and County of San Francisco (mainland & bay islands, excluding Farallon Islands)",
+    "pbf": { "source": "geofabrik", "path": "north-america/us/california/norcal/norcal-latest.osm.pbf" },
+    "bbox": [-123.15, 37.65, -122.30, 37.90],
+    "boundary": {
+      "admin_level": ["6", "8"],
+      "names": ["San Francisco"],
+      "clip_bbox": [-122.53, 37.69, -122.33, 37.84]
+    },
+    "mode_overrides": {
+      "funicular_match": [
+        { "network": "Muni", "name": "Cable Car" },
+        { "route": "tram", "name": "Cable Car" }
+      ]
+    }
+  },
+  {
+    "id": "seattle",
+    "name": "Seattle",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 780000,
+    "boundary_desc": "City of Seattle",
+    "pbf": { "source": "bbbike", "name": "Seattle" },
+    "bbox": [-122.46, 47.46, -122.19, 47.77],
+    "boundary": { "admin_level": "8", "names": ["Seattle"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "los-angeles",
+    "name": "Los Angeles",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 3878000,
+    "boundary_desc": "City of Los Angeles",
+    "pbf": { "source": "geofabrik", "path": "north-america/us/california/socal/socal-latest.osm.pbf" },
+    "bbox": [-118.72, 33.68, -118.10, 34.38],
+    "boundary": { "admin_level": "8", "names": ["Los Angeles"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "name": "Metro (G|J) Line|Orange Line|Silver Line" },
+        { "ref": "^(901|910|950|G|J)$", "operator": "Metro|LACMTA" }
+      ]
+    }
+  },
+  {
+    "id": "miami",
+    "name": "Miami",
+    "country": "United States",
+    "region": "North America",
+    "official_pop": 487000,
+    "boundary_desc": "City of Miami",
+    "pbf": { "source": "bbbike", "name": "Miami" },
+    "bbox": [-80.32, 25.68, -80.10, 25.86],
+    "boundary": { "admin_level": "8", "names": ["Miami"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "toronto",
+    "name": "Toronto",
+    "country": "Canada",
+    "region": "North America",
+    "official_pop": 3026000,
+    "boundary_desc": "City of Toronto",
+    "pbf": { "source": "bbbike", "name": "Toronto" },
+    "bbox": [-79.69, 43.55, -79.07, 43.89],
+    "boundary": { "admin_level": "6", "names": ["Toronto", "City of Toronto"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "montreal",
+    "name": "Montreal",
+    "country": "Canada",
+    "region": "North America",
+    "official_pop": 2100000,
+    "boundary_desc": "Agglomeration of Montreal (Island of Montreal, including enclave municipalities)",
+    "pbf": { "source": "bbbike", "name": "Montreal" },
+    "bbox": [-74.02, 45.38, -73.42, 45.74],
+    "boundary": { "relation_ids": [8508277] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "vancouver",
+    "name": "Vancouver",
+    "country": "Canada",
+    "region": "North America",
+    "official_pop": 706000,
+    "boundary_desc": "City of Vancouver",
+    "pbf": { "source": "bbbike", "name": "Vancouver" },
+    "bbox": [-123.27, 49.17, -122.97, 49.34],
+    "boundary": { "admin_level": "8", "names": ["Vancouver"] },
+    "mode_overrides": {
+      "metro_match": [
+        { "network": "SkyTrain" },
+        { "name": "Expo Line|Millennium Line|Canada Line" }
+      ]
+    }
+  },
+  {
+    "id": "ottawa",
+    "name": "Ottawa",
+    "country": "Canada",
+    "region": "North America",
+    "official_pop": 1072000,
+    "boundary_desc": "City of Ottawa",
+    "pbf": { "source": "geofabrik", "path": "north-america/canada/ontario/ontario-latest.osm.pbf" },
+    "bbox": [-76.40, 44.92, -75.20, 45.58],
+    "boundary": { "admin_level": "6", "names": ["Ottawa"] },
+    "mode_overrides": {
+      "brt_match": [
+        { "name": "Transitway" }
+      ]
+    }
+  },
+  {
+    "id": "edmonton",
+    "name": "Edmonton",
+    "country": "Canada",
+    "region": "North America",
+    "official_pop": 1151000,
+    "boundary_desc": "City of Edmonton",
+    "pbf": { "source": "geofabrik", "path": "north-america/canada/alberta/alberta-latest.osm.pbf" },
+    "bbox": [-113.78, 53.30, -113.22, 53.76],
+    "boundary": { "relation_ids": [2564500] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "tokyo",
+    "name": "Tokyo",
+    "country": "Japan",
+    "region": "Asia",
+    "official_pop": 9850000,
+    "boundary_desc": "Tokyo 23 Special Wards (Tokubetsu-ku)",
+    "pbf": { "source": "geofabrik", "path": "asia/japan/kanto/kanto-latest.osm.pbf" },
+    "bbox": [139.50, 35.48, 139.98, 35.86],
+    "boundary": {
+      "admin_level": "7",
+      "names": [
+        "Adachi", "Arakawa", "Bunkyo", "Chiyoda", "Chuo", "Edogawa", "Itabashi",
+        "Katsushika", "Kita", "Koto", "Meguro", "Minato", "Nakano", "Nerima",
+        "Ota", "Setagaya", "Shibuya", "Shinagawa", "Shinjuku", "Suginami",
+        "Sumida", "Taito", "Toshima"
+      ]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "seoul",
+    "name": "Seoul",
+    "country": "South Korea",
+    "region": "Asia",
+    "official_pop": 9350000,
+    "boundary_desc": "Seoul Special City",
+    "pbf": { "source": "bbbike", "name": "Seoul" },
+    "bbox": [126.70, 37.38, 127.24, 37.72],
+    "boundary": { "admin_level": "4", "names": ["Seoul", "서울특별시"] },
+    "mode_overrides": {}
+  },
+  {
+    "id": "singapore",
+    "name": "Singapore",
+    "country": "Singapore",
+    "region": "Asia",
+    "official_pop": 6037000,
+    "boundary_desc": "Republic of Singapore",
+    "pbf": { "source": "geofabrik", "path": "asia/malaysia-singapore-brunei/malaysia-singapore-brunei-latest.osm.pbf" },
+    "bbox": [103.55, 1.12, 104.55, 1.50],
+    "boundary": {
+      "relation_ids": [536780],
+      "clip_bbox": [103.60, 1.20, 104.09, 1.48]
+    },
+    "mode_overrides": {}
+  },
+  {
+    "id": "hong-kong",
+    "name": "Hong Kong",
+    "country": "Hong Kong",
+    "region": "Asia",
+    "official_pop": 7524000,
+    "boundary_desc": "Hong Kong Special Administrative Region",
+    "pbf": { "source": "geofabrik", "path": "asia/china/hong-kong/hong-kong-latest.osm.pbf" },
+    "bbox": [113.75, 22.10, 114.55, 22.62],
+    "boundary": {
+      "relation_ids": [
+        2558879, 2558880, 2558881, 2558883,
+        2670978, 2800200, 2800201, 2800276, 2800277,
+        7351646, 8189562, 8191142, 8368100, 8477820,
+        8480494, 8480823, 9159733, 9159737
+      ]
+    },
+    "mode_overrides": {}
+  }
+]

@@ -1,0 +1,23 @@
+# Personal architecture doc (never commit)
+ARCHITECTURE.md
+
+# Dependencies & build
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+.DS_Store
+
+# Pipeline cache, temporary files, and generated data (published via GitHub Releases)
+cache/
+tmp/
+public/data/
+*.osm.pbf
+*.pmtiles
+*.tif
+*.zip
+*.tar
+*.tar.gz
+*.geojson
+*.geojsonseq

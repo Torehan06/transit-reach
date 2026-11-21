@@ -1,0 +1,147 @@
+# Transit Reach
+
+Interactive static web app showing how much of each city—and how many of its residents—are within walking distance of rail and rapid transit across **42 global cities**.
+
+- **Street-network walking distance** (not straight-line circles) from 0 to 2 miles (0 to 3.22 km), with instant client-side slider updates and a `mi` / `km` toggle
+- **6 toggleable transit modes**: Metro / Subway, Tram / Light Rail, Commuter / Regional Rail, BRT, Ferry, and Funicular / Cable Car (with duplicate OSM station/platform nodes merged per mode)
+- **Zoom-adaptive population dot-density layer** built from GHSL GHS-POP 2025 (100 m equal-area grid), with fixed deterministic dot positions colored covered vs. uncovered and live people-per-dot scaling (`500` → `100` → `50` → `25` people/dot)
+- **Side-by-side & ranked comparison** across comparable city-proper boundaries for any combination of distance and transit modes
+- **Tap or click anywhere** inside a city to inspect walking distance to the nearest station and highlight it on the map
+
+---
+
+## Running Locally
+
+### Frontend
+Generated city data (`public/data/`) is not committed to git; it is distributed via GitHub Releases. To run locally, either run the pipeline below or download the latest data release into `public/`:
+
+```bash
+gh release download data-v1 --pattern transit-reach-data.tar --dir /tmp
+tar -xf /tmp/transit-reach-data.tar -C public
+```
+
+Then start the dev server:
+```bash
+npm install
+npm run dev
+```
+
+Production build & preview:
+```bash
+npm run build
+npm run preview
+```
+
+### Offline Data Pipeline
+Requires Python 3.12+, `tippecanoe` (v2.17+ with PMTiles support), and `osmium-tool`.
+
+```bash
+python3.12 -m venv .venv
+.venv/bin/pip install -r pipeline/requirements.txt
+
+# Build one or more cities
+.venv/bin/python pipeline/build_city.py ankara istanbul new-york
+
+# Build all 42 cities (cleaning up cached PBFs after each city)
+.venv/bin/python pipeline/build_city.py --all --cleanup
+```
+
+Adding a new city requires only one config entry in [`cities.json`](cities.json) and re-running `pipeline/build_city.py <city_id>`.
+
+### Publishing a New Data Release
+Because generated `.pmtiles`, station JSONs, and `summary.json` total ~427 MB, `public/data/` is gitignored and hosted as a single archive (`transit-reach-data.tar`) on a GitHub Release downloaded by [`.github/workflows/deploy.yml`](.github/workflows/deploy.yml) at build time.
+
+To publish updated city data (for example, `data-v2`):
+```bash
+# 1. Pack public/data/ into a tar archive (.pmtiles are already compressed internally)
+tar -cf /tmp/transit-reach-data.tar -C public data
+
+# 2. Create a new GitHub Release and upload the archive
+gh release create data-v2 /tmp/transit-reach-data.tar \
+  --title "City Data v2" \
+  --notes "Updated PMTiles, station lists, and coverage curves for all configured cities."
+
+# 3. Point deploy.yml at the new tag, commit, and push to main
+#    Update DATA_RELEASE_TAG: data-v2 in .github/workflows/deploy.yml
+rm -f /tmp/transit-reach-data.tar
+```
+
+---
+
+## Methodology & OSM Tagging Calls
+
+- **Walking network**: All pedestrian-accessible OpenStreetMap ways within a 3.5 km buffer of each city boundary (so stations just outside the border still serve residents inside). Walking distances are precomputed via multi-source Dijkstra per mode (`scipy.sparse.csgraph.dijkstra`) and packaged into one PMTiles file per city (`public/data/tiles/<city_id>.pmtiles`).
+- **Station deduplication**: Duplicate OSM station nodes, `stop_position` nodes, platforms, and `public_transport=stop_area` members belonging to the same station and mode are merged into a single station while preserving constituent entrances/platforms as routing access points.
+- **Population & area**: Computed on GHSL GHS-POP 2025 (`GHS_POP_E2025_GLOBE_R2023A_54009_100`, 100 m × 100 m equal-area Mollweide grid). Ocean/open-water `nodata` cells (`-200`) are excluded; inland/estuary cells within OSM municipal boundaries are retained uniformly across cities. Most cities match official figures within ±0.2% to ±13.4%; three rapidly growing cities show modest GHSL R2023A projection divergence from 2024–2025 national estimates (Bursa `+16.2%`, Astana `-17.9%`, Shymkent `+19.5%`) despite exact administrative boundaries.
+- **Notable OSM mode classification calls**:
+  - **Ankara**: Ankaray (A1) is tagged `light_rail` in OSM and classified under Tram / Light Rail; M1–M4 are Metro; Başkentray is Commuter Rail; Yenimahalle–Şentepe Teleferik is Funicular / Cable Car.
+  - **Istanbul**: İETT Metrobüs (`network=Metrobus`, 44 stations) is classified as BRT while regular İETT feeder buses mentioning Metrobüs in destination names are excluded. Marmaray is Commuter Rail; Şehir Hatları / İDO / Turyol / Dentur piers are Ferries; F1–F4 and TF1–TF2 are Funicular / Cable Car.
+  - **Astana**: Astana LRT (*Tarlan Astana*, opened to passengers in May 2026, 18 Phase 1 stations from Airport to Nurly Zhol) is included under Tram / Light Rail (including an override for `construction` tags if present, excluding the unopened Phase 2 Qosshy extension). Two LRT platform/station ways in OSM (`way/1531992951` at Әуежай and `way/1531992956` at Ұлы Дала) carry `subway=yes`; these are reclassified from Metro to Tram / Light Rail since Astana has no metro.
+  - **Almaty**: Almaty Metro is Metro; Kok-Tobe / Shymbulak aerialways are Funicular / Cable Car.
+  - **Boston**: MBTA Silver Line (`SL1`–`SL5`) is classified as BRT; Green Line and Mattapan Trolley are Tram / Light Rail; Red/Orange/Blue are Metro.
+  - **Los Angeles**: Metro G (Orange) and J (Silver) Lines are classified as BRT; B/D Lines are Metro; A/C/E/K Lines are Light Rail; Angels Flight is Funicular.
+  - **New York**: MTA Select Bus Service (SBS) operates largely in curbside lanes without full grade separation and is not classified as BRT. JFK AirTrain is under Tram / Light Rail; NYC Subway + Staten Island Railway are Metro; LIRR + Metro-North are Commuter Rail; Roosevelt Island Tramway is Funicular / Cable Car.
+  - **San Francisco**: Historic Muni Cable Cars are classified under Funicular / Cable Car; BART is Metro; Muni Metro and F Market streetcar are Tram / Light Rail; Caltrain is Commuter Rail.
+  - **Vancouver**: SkyTrain (Expo, Millennium, Canada Lines) is classified as Metro rather than Light Rail via a city override in `cities.json`.
+  - **Ottawa**: O-Train Lines 1/2/4 are Tram / Light Rail; remaining dedicated Transitway stations are classified as BRT.
+  - **Seattle**: Link Light Rail, Seattle Streetcar, and Seattle Center Monorail are classified under Tram / Light Rail as tagged in OSM; RapidRide arterial buses are excluded from BRT.
+  - **London / Tokyo / Berlin / Vienna / Seoul / Singapore / Hong Kong**: Automated/elevated people movers and light metros (e.g., London DLR, Tokyo Yurikamome/Monorail, Singapore LRT, Miami Metromover, Montreal REM) follow their OSM `light_rail`/`monorail` tagging under Tram / Light Rail, while heavy underground/urban metro lines are Metro and suburban/regional networks (Overground/National Rail, JR/private railways, S-Bahn, RER, Cercanías, Rodalies, GO Transit, Metra) are Commuter Rail.
+
+---
+
+## City Boundaries (All 42 Cities)
+
+Comparable "the city itself" administrative boundaries are used across all regions. In Türkiye, metropolitan municipalities span entire mostly-rural provinces, so the central urban districts (*merkez ilçeler*) are used instead.
+
+| Region | City | Country | Boundary Chosen |
+| --- | --- | --- | --- |
+| Türkiye | Ankara | Türkiye | 8 central urban districts (Altındağ, Çankaya, Etimesgut, Keçiören, Mamak, Pursaklar, Sincan, Yenimahalle) |
+| Türkiye | Istanbul | Türkiye | 36 urban districts of Istanbul Province (excluding outlying rural Çatalca, Silivri, and Şile) |
+| Türkiye | İzmir | Türkiye | 11 central urban districts (Balçova, Bayraklı, Bornova, Buca, Çiğli, Gaziemir, Güzelbahçe, Karabağlar, Karşıyaka, Konak, Narlıdere) |
+| Türkiye | Bursa | Türkiye | 3 central urban districts (Nilüfer, Osmangazi, Yıldırım) |
+| Türkiye | Eskişehir | Türkiye | 2 central urban districts (Odunpazarı, Tepebaşı) |
+| Türkiye | Konya | Türkiye | 3 central urban districts (Karatay, Meram, Selçuklu) |
+| Türkiye | Kayseri | Türkiye | 3 central urban districts (Kocasinan, Melikgazi, Talas) |
+| Kazakhstan | Almaty | Kazakhstan | City of Almaty (City of Republican Significance) |
+| Kazakhstan | Astana | Kazakhstan | City of Astana (City of Republican Significance) |
+| Kazakhstan | Shymkent | Kazakhstan | City of Shymkent (City of Republican Significance) |
+| Europe | Amsterdam | Netherlands | Municipality of Amsterdam (*Gemeente Amsterdam*) |
+| Europe | London | United Kingdom | Greater London (32 boroughs + City of London) |
+| Europe | Paris | France | City of Paris (*Ville de Paris*, 20 arrondissements) |
+| Europe | Brussels | Belgium | Brussels-Capital Region (19 municipalities) |
+| Europe | Berlin | Germany | State of Berlin (*Land Berlin*) |
+| Europe | Munich | Germany | City of Munich (*Stadt München*) |
+| Europe | Hamburg | Germany | Free and Hanseatic City of Hamburg (mainland & Elbe, excluding offshore Neuwerk) |
+| Europe | Frankfurt | Germany | City of Frankfurt am Main (*Stadt Frankfurt am Main*) |
+| Europe | Vienna | Austria | City and State of Vienna (*Stadt Wien*, 23 districts) |
+| Europe | Zurich | Switzerland | City of Zurich (*Stadt Zürich*) |
+| Europe | Madrid | Spain | Municipality of Madrid (*Municipio de Madrid*) |
+| Europe | Barcelona | Spain | Municipality of Barcelona (*Municipi de Barcelona*) |
+| Europe | Copenhagen | Denmark | Copenhagen and Frederiksberg municipalities (Frederiksberg enclave included) |
+| Europe | Stockholm | Sweden | City of Stockholm (*Stockholms kommun*) |
+| North America | New York | United States | New York City (5 boroughs) |
+| North America | Chicago | United States | City of Chicago |
+| North America | Boston | United States | City of Boston |
+| North America | Washington DC | United States | District of Columbia |
+| North America | Philadelphia | United States | City and County of Philadelphia |
+| North America | San Francisco | United States | City and County of San Francisco (mainland & bay islands, excluding Farallon Islands) |
+| North America | Seattle | United States | City of Seattle |
+| North America | Los Angeles | United States | City of Los Angeles |
+| North America | Miami | United States | City of Miami |
+| North America | Toronto | Canada | City of Toronto |
+| North America | Montreal | Canada | Agglomeration of Montreal (Island of Montreal, including enclave municipalities) |
+| North America | Vancouver | Canada | City of Vancouver |
+| North America | Ottawa | Canada | City of Ottawa |
+| North America | Edmonton | Canada | City of Edmonton |
+| Asia | Tokyo | Japan | Tokyo 23 Special Wards (*Tokubetsu-ku*) |
+| Asia | Seoul | South Korea | Seoul Special City |
+| Asia | Singapore | Singapore | Republic of Singapore (main island & inhabited coastal islands) |
+| Asia | Hong Kong | Hong Kong | Hong Kong Special Administrative Region (all 18 districts) |
+
+---
+
+## Data Attribution & Licenses
+
+- **Basemap tiles**: [OpenFreeMap](https://openfreemap.org) (based on OpenStreetMap data)
+- **Streets, boundaries & transit stations**: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), built from [BBBike](https://download.bbbike.org/osm/bbbike/) and [Geofabrik](https://download.geofabrik.de/) `.osm.pbf` extracts
+- **Population grid**: Schiavina M., Freire S., Carioli A., MacManus K. (2023): *GHS-POP R2023A - GHS population grid multitemporal (1975-2030)*. European Commission, Joint Research Centre (JRC). DOI: [10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE](https://doi.org/10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE). Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

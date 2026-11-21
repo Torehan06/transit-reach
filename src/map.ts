@@ -1,0 +1,595 @@
+import maplibregl, { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl';
+import { Protocol } from 'pmtiles';
+import { CitySummary, MODES, MODE_BY_CODE, ModeCode, StationRecord } from './types';
+
+const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
+
+const COLOR_STREET_COVERED = '#2dd4bf';
+const COLOR_STREET_UNCOVERED = 'rgba(148, 163, 184, 0.16)';
+const COLOR_DOT_COVERED = '#fbbf24';
+const COLOR_DOT_UNCOVERED = '#64748b';
+const FAR_DIST = 999999;
+
+export interface InspectModeHit {
+  mode: ModeCode;
+  distanceM: number;
+  station: StationRecord;
+}
+
+export interface InspectResult {
+  lngLat: [number, number];
+  best: InspectModeHit | null;
+  byMode: InspectModeHit[];
+  withinReach: boolean;
+  noModesEnabled: boolean;
+}
+
+export class TransitMap {
+  public readonly map: maplibregl.Map;
+  private protocolRegistered = false;
+  private ready = false;
+  private currentCity: CitySummary | null = null;
+  private stationsById = new Map<number, StationRecord>();
+  private stationsList: StationRecord[] = [];
+  private lastEnabledModes: ModeCode[] = MODES.map((m) => m.code);
+  private lastDistanceM = 1609;
+  private lastShowDots = true;
+  private lastShowStations = true;
+  private pendingRaf: number | null = null;
+  private lastInspectProps: { lngLat: [number, number]; props: Record<string, unknown> } | null = null;
+  private onInspectCallback: ((res: InspectResult | null) => void) | null = null;
+  private onZoomCallback: ((zoom: number) => void) | null = null;
+
+  constructor(
+    container: HTMLElement,
+    callbacks: {
+      onReady: () => void;
+      onZoom: (zoom: number) => void;
+      onInspect: (res: InspectResult | null) => void;
+    }
+  ) {
+    this.onInspectCallback = callbacks.onInspect;
+    this.onZoomCallback = callbacks.onZoom;
+
+    if (!this.protocolRegistered) {
+      const protocol = new Protocol();
+      maplibregl.addProtocol('pmtiles', protocol.tile);
+      this.protocolRegistered = true;
+    }
+
+    this.map = new maplibregl.Map({
+      container,
+      style: OPENFREEMAP_STYLE,
+      center: [32.85, 39.92],
+      zoom: 11,
+      minZoom: 7,
+      maxZoom: 17.5,
+      attributionControl: false,
+      pitchWithRotate: false,
+      dragRotate: false,
+      touchPitch: false,
+    });
+
+    this.map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+
+    this.map.on('load', () => {
+      this.ready = true;
+      this.dimBasemap();
+      this.initOverlaySources();
+      callbacks.onReady();
+    });
+
+    this.map.on('zoom', () => {
+      if (this.onZoomCallback) {
+        this.onZoomCallback(this.map.getZoom());
+      }
+    });
+
+    this.map.on('click', (e: MapMouseEvent) => {
+      this.handleMapClick(e);
+    });
+  }
+
+  private dimBasemap(): void {
+    // Soften basemap road lines slightly so our transit streets & population dots stand out
+    const style = this.map.getStyle();
+    if (!style?.layers) return;
+    for (const layer of style.layers) {
+      if (layer.type === 'line' && /road|highway|bridge|tunnel|street|rail/i.test(layer.id)) {
+        try {
+          this.map.setPaintProperty(layer.id, 'line-opacity', 0.25);
+        } catch {
+          // Ignore expression-incompatible layers
+        }
+      }
+    }
+  }
+
+  private initOverlaySources(): void {
+    this.map.addSource('stations-src', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+
+    this.map.addSource('inspect-src', {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+    });
+
+    // Build mode color match expression for stations
+    const modeColorExpr: ExpressionSpecification = [
+      'match',
+      ['get', 'mode'],
+      'm', MODE_BY_CODE.m.color,
+      't', MODE_BY_CODE.t.color,
+      'c', MODE_BY_CODE.c.color,
+      'b', MODE_BY_CODE.b.color,
+      'f', MODE_BY_CODE.f.color,
+      'u', MODE_BY_CODE.u.color,
+      '#ffffff',
+    ];
+
+    this.map.addLayer({
+      id: 'stations-layer',
+      type: 'circle',
+      source: 'stations-src',
+      paint: {
+        'circle-color': modeColorExpr,
+        'circle-radius': ['interpolate', ['linear'], ['zoom'], 9, 2.4, 12, 4.2, 15, 6.2],
+        'circle-stroke-color': '#0b0f17',
+        'circle-stroke-width': ['interpolate', ['linear'], ['zoom'], 9, 0.7, 13, 1.5],
+        'circle-opacity': ['case', ['==', ['get', 'inside'], 1], 0.95, 0.35],
+        'circle-stroke-opacity': ['case', ['==', ['get', 'inside'], 1], 0.95, 0.35],
+      },
+    });
+
+    // Inspect connector line + highlight rings
+    this.map.addLayer({
+      id: 'inspect-line-layer',
+      type: 'line',
+      source: 'inspect-src',
+      filter: ['==', ['get', 'kind'], 'connector'],
+      paint: {
+        'line-color': '#f8fafc',
+        'line-width': 2,
+        'line-dasharray': [3, 3],
+        'line-opacity': 0.85,
+      },
+    });
+
+    this.map.addLayer({
+      id: 'inspect-station-ring',
+      type: 'circle',
+      source: 'inspect-src',
+      filter: ['==', ['get', 'kind'], 'station'],
+      paint: {
+        'circle-radius': 11,
+        'circle-color': 'rgba(255, 255, 255, 0.15)',
+        'circle-stroke-color': '#ffffff',
+        'circle-stroke-width': 2.5,
+      },
+    });
+
+    this.map.addLayer({
+      id: 'inspect-tap-point',
+      type: 'circle',
+      source: 'inspect-src',
+      filter: ['==', ['get', 'kind'], 'tap'],
+      paint: {
+        'circle-radius': 6,
+        'circle-color': '#ffffff',
+        'circle-stroke-color': '#0b0f17',
+        'circle-stroke-width': 2,
+      },
+    });
+
+    // Pointer cursor on hover over stations
+    this.map.on('mouseenter', 'stations-layer', () => {
+      this.map.getCanvas().style.cursor = 'pointer';
+    });
+    this.map.on('mouseleave', 'stations-layer', () => {
+      this.map.getCanvas().style.cursor = '';
+    });
+  }
+
+  private buildMinDistExpression(modes: ModeCode[]): ExpressionSpecification | null {
+    if (modes.length === 0) return null;
+    if (modes.length === 1) {
+      return ['coalesce', ['get', MODE_BY_CODE[modes[0]].distProp], FAR_DIST];
+    }
+    const args: ExpressionSpecification[] = modes.map((m) => [
+      'coalesce',
+      ['get', MODE_BY_CODE[m].distProp],
+      FAR_DIST,
+    ]);
+    return ['min', ...args] as ExpressionSpecification;
+  }
+
+  private buildStreetColorExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | string {
+    const minExpr = this.buildMinDistExpression(modes);
+    if (!minExpr || distanceM <= 0) return COLOR_STREET_UNCOVERED;
+    return ['case', ['<=', minExpr, distanceM], COLOR_STREET_COVERED, COLOR_STREET_UNCOVERED];
+  }
+
+  private buildStreetOpacityExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | number {
+    const minExpr = this.buildMinDistExpression(modes);
+    if (!minExpr || distanceM <= 0) return 0.45;
+    return ['case', ['<=', minExpr, distanceM], 0.88, 0.42];
+  }
+
+  private buildDotColorExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | string {
+    const minExpr = this.buildMinDistExpression(modes);
+    if (!minExpr || distanceM <= 0) return COLOR_DOT_UNCOVERED;
+    return ['case', ['<=', minExpr, distanceM], COLOR_DOT_COVERED, COLOR_DOT_UNCOVERED];
+  }
+
+  private buildDotOpacityExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | number {
+    const minExpr = this.buildMinDistExpression(modes);
+    if (!minExpr || distanceM <= 0) return 0.36;
+    return ['case', ['<=', minExpr, distanceM], 0.92, 0.34];
+  }
+
+  public async loadCity(
+    city: CitySummary,
+    stations: StationRecord[],
+    enabledModes: Set<ModeCode>,
+    distanceM: number,
+    showDots: boolean,
+    showStations: boolean
+  ): Promise<void> {
+    if (!this.ready) return;
+
+    this.currentCity = city;
+    this.stationsList = stations;
+    this.stationsById.clear();
+    for (const st of stations) {
+      this.stationsById.set(st.id, st);
+    }
+    this.clearInspect();
+
+    this.lastEnabledModes = [...enabledModes];
+    this.lastDistanceM = distanceM;
+    this.lastShowDots = showDots;
+    this.lastShowStations = showStations;
+
+    // Remove previous city vector layers & source cleanly
+    for (const lid of ['dots-layer', 'streets-layer', 'city-boundary-line', 'city-boundary-fill']) {
+      if (this.map.getLayer(lid)) {
+        this.map.removeLayer(lid);
+      }
+    }
+    if (this.map.getSource('city-tiles')) {
+      this.map.removeSource('city-tiles');
+    }
+
+    const base = new URL(import.meta.env.BASE_URL, window.location.origin);
+    const pmtilesUrl = new URL(`data/tiles/${city.id}.pmtiles`, base).href;
+
+    this.map.addSource('city-tiles', {
+      type: 'vector',
+      url: `pmtiles://${pmtilesUrl}`,
+      minzoom: 8,
+      maxzoom: 13,
+    });
+
+    const beforeLayer = 'stations-layer';
+
+    this.map.addLayer(
+      {
+        id: 'city-boundary-fill',
+        type: 'fill',
+        source: 'city-tiles',
+        'source-layer': 'boundary',
+        paint: {
+          'fill-color': '#0f172a',
+          'fill-opacity': 0.22,
+        },
+      },
+      beforeLayer
+    );
+
+    this.map.addLayer(
+      {
+        id: 'streets-layer',
+        type: 'line',
+        source: 'city-tiles',
+        'source-layer': 'streets',
+        layout: {
+          'line-cap': 'round',
+          'line-join': 'round',
+        },
+        paint: {
+          'line-color': this.buildStreetColorExpr(this.lastEnabledModes, distanceM),
+          'line-opacity': this.buildStreetOpacityExpr(this.lastEnabledModes, distanceM),
+          'line-width': ['interpolate', ['linear'], ['zoom'], 8.5, 0.75, 11, 1.15, 13, 1.85, 15.5, 3.0],
+        },
+      },
+      beforeLayer
+    );
+
+    this.map.addLayer(
+      {
+        id: 'city-boundary-line',
+        type: 'line',
+        source: 'city-tiles',
+        'source-layer': 'boundary',
+        paint: {
+          'line-color': 'rgba(226, 232, 240, 0.55)',
+          'line-width': ['interpolate', ['linear'], ['zoom'], 8, 1.2, 13, 2.0],
+          'line-dasharray': [4, 3],
+        },
+      },
+      beforeLayer
+    );
+
+    this.map.addLayer(
+      {
+        id: 'dots-layer',
+        type: 'circle',
+        source: 'city-tiles',
+        'source-layer': 'dots',
+        layout: {
+          visibility: showDots ? 'visible' : 'none',
+        },
+        paint: {
+          'circle-color': this.buildDotColorExpr(this.lastEnabledModes, distanceM),
+          'circle-opacity': this.buildDotOpacityExpr(this.lastEnabledModes, distanceM),
+          'circle-radius': ['interpolate', ['linear'], ['zoom'], 8, 1.25, 10.5, 1.6, 12.5, 1.9, 14, 2.1, 16, 2.8],
+        },
+      },
+      beforeLayer
+    );
+
+    // Update stations GeoJSON
+    const stSource = this.map.getSource('stations-src') as GeoJSONSource | undefined;
+    if (stSource) {
+      stSource.setData({
+        type: 'FeatureCollection',
+        features: stations.map((s) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [s.lon, s.lat] },
+          properties: { id: s.id, mode: s.mode, name: s.name, inside: s.inside ? 1 : 0 },
+        })),
+      });
+    }
+
+    this.applyStationFilter();
+    this.applyLayerVisibility();
+    this.fitCurrentCity(550);
+  }
+
+  public fitCurrentCity(duration = 550): void {
+    if (!this.ready || !this.currentCity) return;
+    const [west, south, east, north] = this.currentCity.bounds;
+    const container = this.map.getContainer();
+    const w = container.clientWidth || window.innerWidth;
+    const h = container.clientHeight || window.innerHeight;
+    const isDesktop = w >= 768;
+    const padding = isDesktop
+      ? { top: 48, bottom: 72, left: Math.min(396, Math.floor(w * 0.4)), right: 56 }
+      : { top: 68, bottom: Math.min(185, Math.floor(h * 0.3)), left: 20, right: 20 };
+
+    this.map.fitBounds(
+      [
+        [west, south],
+        [east, north],
+      ],
+      { padding, duration, maxZoom: 12.5 }
+    );
+  }
+
+  public updateFilter(
+    enabledModes: Set<ModeCode>,
+    distanceM: number,
+    showDots: boolean,
+    showStations: boolean
+  ): void {
+    const newModes = [...enabledModes];
+    const modesChanged =
+      newModes.length !== this.lastEnabledModes.length ||
+      newModes.some((m, i) => m !== this.lastEnabledModes[i]);
+    const visibilityChanged = showDots !== this.lastShowDots || showStations !== this.lastShowStations;
+
+    this.lastEnabledModes = newModes;
+    this.lastDistanceM = distanceM;
+    this.lastShowDots = showDots;
+    this.lastShowStations = showStations;
+
+    if (!this.ready || !this.currentCity) return;
+
+    if (visibilityChanged) {
+      this.applyLayerVisibility();
+    }
+    if (modesChanged) {
+      this.applyStationFilter();
+    }
+
+    // Coalesce rapid slider ticks to 1 paint update per animation frame for 60 FPS mobile dragging
+    if (this.pendingRaf === null) {
+      this.pendingRaf = requestAnimationFrame(() => {
+        this.pendingRaf = null;
+        this.applyPaintExpressions();
+        if (this.lastInspectProps) {
+          this.emitInspectFromProps(this.lastInspectProps.lngLat, this.lastInspectProps.props);
+        }
+      });
+    }
+  }
+
+  private applyLayerVisibility(): void {
+    if (this.map.getLayer('dots-layer')) {
+      this.map.setLayoutProperty('dots-layer', 'visibility', this.lastShowDots ? 'visible' : 'none');
+    }
+    if (this.map.getLayer('stations-layer')) {
+      this.map.setLayoutProperty('stations-layer', 'visibility', this.lastShowStations ? 'visible' : 'none');
+    }
+  }
+
+  private applyStationFilter(): void {
+    if (!this.map.getLayer('stations-layer')) return;
+    if (this.lastEnabledModes.length === 0) {
+      this.map.setFilter('stations-layer', ['==', ['get', 'mode'], '__none__']);
+    } else {
+      this.map.setFilter('stations-layer', [
+        'in',
+        ['get', 'mode'],
+        ['literal', this.lastEnabledModes],
+      ]);
+    }
+  }
+
+  private applyPaintExpressions(): void {
+    const modes = this.lastEnabledModes;
+    const dist = this.lastDistanceM;
+    if (this.map.getLayer('streets-layer')) {
+      this.map.setPaintProperty('streets-layer', 'line-color', this.buildStreetColorExpr(modes, dist));
+      this.map.setPaintProperty('streets-layer', 'line-opacity', this.buildStreetOpacityExpr(modes, dist));
+    }
+    if (this.map.getLayer('dots-layer')) {
+      this.map.setPaintProperty('dots-layer', 'circle-color', this.buildDotColorExpr(modes, dist));
+      this.map.setPaintProperty('dots-layer', 'circle-opacity', this.buildDotOpacityExpr(modes, dist));
+    }
+  }
+
+  private handleMapClick(e: MapLayerMouseEvent): void {
+    if (!this.ready || !this.currentCity) return;
+
+    // 1. Check if user clicked directly on a visible station marker
+    if (this.lastShowStations && this.map.getLayer('stations-layer')) {
+      const stHits = this.map.queryRenderedFeatures(
+        [
+          [e.point.x - 8, e.point.y - 8],
+          [e.point.x + 8, e.point.y + 8],
+        ],
+        { layers: ['stations-layer'] }
+      );
+      if (stHits.length > 0) {
+        const sid = Number(stHits[0].properties?.id);
+        const st = this.stationsById.get(sid);
+        if (st) {
+          const fakeProps: Record<string, unknown> = {
+            [MODE_BY_CODE[st.mode].distProp]: 0,
+            [MODE_BY_CODE[st.mode].stationProp]: st.id,
+          };
+          this.lastInspectProps = { lngLat: [st.lon, st.lat], props: fakeProps };
+          this.emitInspectFromProps([st.lon, st.lat], fakeProps);
+          return;
+        }
+      }
+    }
+
+    // 2. Query nearest street segment in expanding pixel boxes around tap point
+    if (!this.map.getLayer('streets-layer')) return;
+    let matchedFeature: maplibregl.MapGeoJSONFeature | null = null;
+    for (const radius of [10, 24, 48]) {
+      const feats = this.map.queryRenderedFeatures(
+        [
+          [e.point.x - radius, e.point.y - radius],
+          [e.point.x + radius, e.point.y + radius],
+        ],
+        { layers: ['streets-layer'] }
+      );
+      if (feats.length > 0) {
+        // Pick the feature with properties (closest / first returned by MapLibre)
+        matchedFeature = feats[0];
+        break;
+      }
+    }
+
+    if (!matchedFeature || !matchedFeature.properties) {
+      this.clearInspect();
+      return;
+    }
+
+    const lngLat: [number, number] = [e.lngLat.lng, e.lngLat.lat];
+    const props = { ...matchedFeature.properties };
+    this.lastInspectProps = { lngLat, props };
+    this.emitInspectFromProps(lngLat, props);
+  }
+
+  private emitInspectFromProps(lngLat: [number, number], props: Record<string, unknown>): void {
+    const enabled = this.lastEnabledModes;
+    if (enabled.length === 0) {
+      this.setInspectGraphics(lngLat, null);
+      this.onInspectCallback?.({
+        lngLat,
+        best: null,
+        byMode: [],
+        withinReach: false,
+        noModesEnabled: true,
+      });
+      return;
+    }
+
+    const byMode: InspectModeHit[] = [];
+    for (const mode of enabled) {
+      const meta = MODE_BY_CODE[mode];
+      const rawDist = props[meta.distProp];
+      const rawSid = props[meta.stationProp];
+      if (rawDist !== undefined && rawDist !== null && rawSid !== undefined && rawSid !== null) {
+        const distM = Number(rawDist);
+        const st = this.stationsById.get(Number(rawSid));
+        if (Number.isFinite(distM) && st) {
+          byMode.push({ mode, distanceM: distM, station: st });
+        }
+      }
+    }
+
+    byMode.sort((a, b) => a.distanceM - b.distanceM);
+    const best = byMode.length > 0 ? byMode[0] : null;
+    const withinReach = best !== null && best.distanceM <= this.lastDistanceM;
+
+    this.setInspectGraphics(lngLat, best?.station ?? null);
+    this.onInspectCallback?.({
+      lngLat,
+      best,
+      byMode,
+      withinReach,
+      noModesEnabled: false,
+    });
+  }
+
+  private setInspectGraphics(tapLngLat: [number, number], station: StationRecord | null): void {
+    const src = this.map.getSource('inspect-src') as GeoJSONSource | undefined;
+    if (!src) return;
+
+    const features: GeoJSON.Feature[] = [
+      {
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: tapLngLat },
+        properties: { kind: 'tap' },
+      },
+    ];
+
+    if (station) {
+      features.push({
+        type: 'Feature',
+        geometry: { type: 'Point', coordinates: [station.lon, station.lat] },
+        properties: { kind: 'station' },
+      });
+      features.push({
+        type: 'Feature',
+        geometry: {
+          type: 'LineString',
+          coordinates: [tapLngLat, [station.lon, station.lat]],
+        },
+        properties: { kind: 'connector' },
+      });
+    }
+
+    src.setData({ type: 'FeatureCollection', features });
+  }
+
+  public clearInspect(): void {
+    this.lastInspectProps = null;
+    const src = this.map.getSource('inspect-src') as GeoJSONSource | undefined;
+    if (src) {
+      src.setData({ type: 'FeatureCollection', features: [] });
+    }
+    this.onInspectCallback?.(null);
+  }
+
+  public getStationsCount(): number {
+    return this.stationsList.length;
+  }
+}
