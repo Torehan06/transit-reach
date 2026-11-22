@@ -574,7 +574,7 @@ function bindEvents(): void {
     const prevCity = state.cityId;
     parseHashState();
     if (state.cityId !== prevCity) {
-      selectCity(state.cityId);
+      void selectCity(state.cityId).then(() => onSettingsChanged()); // also sync slider/filters from the new hash
     } else {
       onSettingsChanged();
     }
