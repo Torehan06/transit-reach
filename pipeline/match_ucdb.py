@@ -48,7 +48,7 @@ names = {c['id']: c['name'] for c in cities}
 names.update({c['id']: c['name'] for c in json.load(open(ROOT / 'cache/probe_cities5.json'))})
 for c in cities + [{'id': k} for k in extra if k not in ids]:
     cid = c['id']
-    ctr = summary.get(cid, {}).get('center') or extra.get(cid)
+    ctr = summary.get(cid, {}).get('center') or extra.get(cid) or ([(c['bbox'][0]+c['bbox'][2])/2, (c['bbox'][1]+c['bbox'][3])/2] if c.get('bbox') else None)
     if not ctr:
         print('no center', cid, file=sys.stderr); continue
     if cid in DOWNTOWN: ctr = DOWNTOWN[cid]
