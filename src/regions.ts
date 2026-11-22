@@ -11,6 +11,21 @@ export const CONTINENTS = ['Europe', 'Asia', 'Africa', 'North America', 'South A
 export type Continent = (typeof CONTINENTS)[number];
 
 const COUNTRY_CONTINENT: Record<string, Continent> = {
+  // Added Nov 2026
+  Belarus: 'Europe',
+  Bulgaria: 'Europe',
+  Romania: 'Europe',
+  Serbia: 'Europe',
+  Ukraine: 'Europe',
+  Bangladesh: 'Asia',
+  Pakistan: 'Asia',
+  Uzbekistan: 'Asia',
+  Vietnam: 'Asia',
+  'Dominican Republic': 'North America',
+  Panama: 'North America',
+  Ecuador: 'South America',
+  Uruguay: 'South America',
+  Venezuela: 'South America',
   // Europe
   Austria: 'Europe',
   Belgium: 'Europe',

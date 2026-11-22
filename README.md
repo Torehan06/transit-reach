@@ -14,7 +14,8 @@ Interactive static web app showing how much of each city—and how many of its r
 - **Close-in share**: coverage within ½ mi ÷ coverage within 1 mi. High means stations sit among homes; low means many people live a long walk away. Also a sortable column in the comparison table.
 - **Stations vs reach scatter** (comparison modal): coverage against stations per million residents with a logistic trend line. Cities above the line reach more people than their station count predicts.
 - **Biggest gaps**: the largest clusters of people beyond the walking distance in the area on screen, with the nearest station to each.
-- **Sketch a line**: tap to draw a hypothetical line, pick station spacing (400 m / 800 m / 1.6 km) and see how many people it would newly reach. This is an estimate (straight line × 1.3 over the population dots loaded on screen), not a routed walk.
+- **Sketch a line**: tap to draw a hypothetical line, pick station spacing (400 m / 800 m / 1.6 km) and see how many people it would newly reach. Walking distance to a sketched station is straight-line distance × a detour factor measured from the city's own street network (real walking distances of nearby population dots to existing stations), so it is an estimate, not a routed walk. Sketches are stored in the URL (`sk=`) and can be shared.
+- **City limits / Urban area**: administrative boundaries differ a lot between countries (Paris = 20 arrondissements, Istanbul = 36 districts, US = city limits). The urban-area view recomputes every statistic over the city's [GHS-UCDB](https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php) urban centre, one definition for every city (contiguous 1 km² cells of at least 1,500 people/km², at least 50,000 people). Dots are still only drawn inside the city limits; the urban centre is shown as a dashed outline. Cities that share one urban centre (Tokyo, Yokohama, Kawasaki) appear once in rankings.
 
 ---
 
@@ -275,4 +276,5 @@ Population comes from GHSL GHS-POP R2023A (2025 epoch) inside each boundary. Whe
 
 - **Basemap tiles**: [OpenFreeMap](https://openfreemap.org) (based on OpenStreetMap data)
 - **Streets, boundaries & transit stations**: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), built from [BBBike](https://download.bbbike.org/osm/bbbike/) and [Geofabrik](https://download.geofabrik.de/) `.osm.pbf` extracts
+- **Urban centres**: European Commission, Joint Research Centre (JRC): *GHS-UCDB R2024A - GHS Urban Centre Database 2025*, V1.2. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Population grid**: Schiavina M., Freire S., Carioli A., MacManus K. (2023): *GHS-POP R2023A - GHS population grid multitemporal (1975-2030)*. European Commission, Joint Research Centre (JRC). DOI: [10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE](https://doi.org/10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE). Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
