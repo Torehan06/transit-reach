@@ -273,6 +273,9 @@ def build_uc_stats(city: Dict[str, Any], uc: Dict[str, Any]) -> Dict[str, Any]:
         round(max(maxy + UC_PAD_DEG, city["bbox"][3]), 4),
     ]
     ucity["boundary"] = {"geojson": uc["geom"]}
+    if city.get("uc_pbf"):
+        # A larger extract when the city's own one does not cover the whole urban centre.
+        ucity["pbf"] = city["uc_pbf"]
     print(f"  [UC] {uc['uc_name']} ({uc['uc_km2']:.0f} km², UCDB pop {uc['uc_pop']:,})")
     osm_data = extract_city_osm(ucity, CACHE_DIR)
     routing = compute_walking_distances(
@@ -336,6 +339,8 @@ def add_uc(entry: Dict[str, Any], city: Dict[str, Any], ucdb: Dict[str, Any], by
     finally:
         shutil.rmtree(TMP_DIR / f"{city['id']}__uc", ignore_errors=True)
         (CACHE_DIR / "pbf" / f"city_{city['id']}__uc.osm.pbf").unlink(missing_ok=True)
+        if city.get("uc_pbf", {}).get("path"):
+            (CACHE_DIR / "pbf" / Path(city["uc_pbf"]["path"]).name).unlink(missing_ok=True)
 
 
 def main() -> None:
