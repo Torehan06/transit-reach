@@ -214,6 +214,7 @@
   },
   {
     "id": "paris",
+    "uc_pbf": {"source": "geofabrik", "path": "europe/france/ile-de-france/ile-de-france-latest.osm.pbf"},
     "name": "Paris",
     "country": "France",
     "region": "Europe",
@@ -489,6 +490,7 @@
   },
   {
     "id": "chicago",
+    "uc_pbf": {"source": "geofabrik", "path": "north-america/us/illinois/illinois-latest.osm.pbf"},
     "name": "Chicago",
     "country": "United States",
     "region": "North America",
@@ -563,6 +565,7 @@
   },
   {
     "id": "seattle",
+    "uc_pbf": {"source": "geofabrik", "path": "north-america/us/washington/washington-latest.osm.pbf"},
     "name": "Seattle",
     "country": "United States",
     "region": "North America",
@@ -592,6 +595,7 @@
   },
   {
     "id": "miami",
+    "uc_pbf": {"source": "geofabrik", "path": "north-america/us/florida/florida-latest.osm.pbf"},
     "name": "Miami",
     "country": "United States",
     "region": "North America",
@@ -604,6 +608,7 @@
   },
   {
     "id": "toronto",
+    "uc_pbf": {"source": "geofabrik", "path": "north-america/canada/ontario/ontario-latest.osm.pbf"},
     "name": "Toronto",
     "country": "Canada",
     "region": "North America",
@@ -812,6 +817,7 @@
   },
   {
     "id": "seoul",
+    "uc_pbf": {"source": "geofabrik", "path": "asia/south-korea-latest.osm.pbf"},
     "name": "Seoul",
     "country": "South Korea",
     "region": "Asia",
@@ -953,6 +959,7 @@
   },
   {
     "id": "melbourne",
+    "uc_pbf": {"source": "geofabrik", "path": "australia-oceania/australia-latest.osm.pbf"},
     "name": "Melbourne",
     "country": "Australia",
     "region": "Oceania",
