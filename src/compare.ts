@@ -3,19 +3,24 @@ import {
   formatArea,
   formatCompactPop,
   formatDistance,
+  formatMinutes,
+  medianWalkM,
 } from './stats';
 import { CONTINENTS, continentOf, fillCitySelect } from './regions';
 import { Diagnosis, diagnose } from './reach';
 import { renderScatter } from './scatter';
 import { rankable } from './urban';
+import { NresStats, nresPct } from './nres';
 import { AppState, CitySummary, CoverageStats, MODES, SummaryManifest } from './types';
 
-type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'diag' | 'stations' | 'name';
+type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'diag' | 'median' | 'nres' | 'stations' | 'name';
 
 interface RowData {
   city: CitySummary;
   stats: CoverageStats;
   diag: Diagnosis | null;
+  median: number | null;
+  nres: number | null;
 }
 
 export class CompareModal {
@@ -72,6 +77,9 @@ export class CompareModal {
   }
 
   /** Swap the stats source (city limits vs urban areas) without resetting the UI. */
+  /** Non-residential stats per city for the current view; null hides the column. */
+  public nresSource: ((cityId: string) => NresStats | null) | null = null;
+
   public setManifest(manifest: SummaryManifest): void {
     this.manifest = manifest;
     if (!this.backdrop.classList.contains('hidden')) this.render();
@@ -234,6 +242,10 @@ export class CompareModal {
           this.manifest!.bucket_step_m
         ),
         diag: diagnose(city, this.state!.enabledModes, this.manifest!.bucket_step_m),
+        median: medianWalkM(city, this.state!.enabledModes, this.manifest!.bucket_step_m),
+        nres: this.nresSource
+          ? nresPct(this.nresSource(city.id), this.state!.enabledModes, this.state!.distanceM, this.manifest!.bucket_step_m)
+          : null,
       }));
 
     rows.sort((a, b) => {
@@ -244,6 +256,10 @@ export class CompareModal {
           return b.stats.areaPct - a.stats.areaPct;
         case 'coveredPop':
           return b.stats.coveredPop - a.stats.coveredPop;
+        case 'median':
+          return (a.median ?? 1e9) - (b.median ?? 1e9);
+        case 'nres':
+          return (b.nres ?? -1) - (a.nres ?? -1);
         case 'diag':
           return (b.diag?.rank ?? -1) - (a.diag?.rank ?? -1) || (b.diag?.near ?? 0) - (a.diag?.near ?? 0);
         case 'stations':
@@ -253,6 +269,7 @@ export class CompareModal {
       }
     });
 
+    this.tbody.closest('table')?.classList.toggle('no-nres', !this.nresSource);
     this.tbody.innerHTML = '';
     rows.forEach((row, idx) => {
       const tr = document.createElement('tr');
@@ -277,6 +294,8 @@ export class CompareModal {
             ? `<span class="diag diag-${row.diag.key}" title="${row.diag.label}">${row.diag.short}</span><span class="diag-nums">${row.diag.near.toFixed(0)}% → ${row.diag.far.toFixed(0)}%</span>`
             : '—'
         }</td>
+        <td class="num-col">${row.median === null ? '40+ min' : formatMinutes(row.median)}</td>
+        <td class="num-col nres-col">${row.nres === null ? '—' : row.nres.toFixed(0) + '%'}</td>
         <td class="num-col">${row.stats.activeStations}</td>
       `;
 

@@ -82,6 +82,14 @@
             <div class="kpi-sub" id="kpi-area-sub">—</div>
           </div>
         </section>
+        <section class="kpi-row2" aria-label="More coverage statistics">
+          <div class="kpi-mini" title="Half of the residents live within this walk of a station of the selected modes">
+            <span class="kpi-mini-label">Median walk to a station</span><b id="kpi-median">—</b>
+          </div>
+          <div class="kpi-mini hidden" id="kpi-nres-wrap" title="Share of non-residential buildings (offices, campuses, hospitals, shops, industry) within the walking distance. GHSL GHS-BUILT-S NRES 2025: building footprint, not people.">
+            <span class="kpi-mini-label">Workplaces &amp; campuses in reach</span><b id="kpi-nres">—</b>
+          </div>
+        </section>
 
         <!-- Distance Slider -->
         <section class="control-section slider-section">
@@ -303,6 +311,8 @@
                     <option value="areaPct">Sort: Area %</option>
                     <option value="coveredPop">Sort: Covered People</option>
                     <option value="diag">Sort: Diagnosis</option>
+                    <option value="median">Sort: Median walk</option>
+                    <option value="nres">Sort: Workplaces in reach</option>
                     <option value="stations">Sort: Total Stations</option>
                     <option value="name">Sort: City Name</option>
                   </select>
@@ -317,6 +327,8 @@
                       <th>Pop covered</th>
                       <th>Area covered</th>
                       <th title="Coverage within a 0.8 km walk → within a 3.2 km walk">Diagnosis</th>
+                      <th title="Half of the residents live within this walk of a station">Median walk</th>
+                      <th class="nres-col" title="Non-residential buildings (offices, campuses, hospitals, shops) within the walking distance">Workplaces</th>
                       <th>Stations</th>
                     </tr>
                   </thead>

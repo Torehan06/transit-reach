@@ -1,6 +1,7 @@
 import maplibregl, { ExpressionSpecification, GeoJSONSource, MapLayerMouseEvent, MapMouseEvent } from 'maplibre-gl';
 import { Protocol } from 'pmtiles';
 import { CitySummary, MODES, MODE_BY_CODE, ModeCode, StationRecord } from './types';
+import { traceWalk } from './route';
 
 const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 
@@ -193,6 +194,22 @@ export class TransitMap {
       },
     });
 
+    this.map.addLayer({
+      id: 'inspect-route-casing',
+      type: 'line',
+      source: 'inspect-src',
+      filter: ['==', ['get', 'kind'], 'route'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#0b0f17', 'line-width': 6, 'line-opacity': 0.75 },
+    });
+    this.map.addLayer({
+      id: 'inspect-route-layer',
+      type: 'line',
+      source: 'inspect-src',
+      filter: ['==', ['get', 'kind'], 'route'],
+      layout: { 'line-cap': 'round', 'line-join': 'round' },
+      paint: { 'line-color': '#f8fafc', 'line-width': 3 },
+    });
     this.map.addLayer({
       id: 'inspect-station-ring',
       type: 'circle',
@@ -672,7 +689,11 @@ export class TransitMap {
     const best = byMode.length > 0 ? byMode[0] : null;
     const withinReach = best !== null && !best.approx && best.distanceM <= this.lastDistanceM;
 
-    this.setInspectGraphics(lngLat, best?.station ?? null);
+    const route =
+      best && !best.approx
+        ? traceWalk(this.map, lngLat, [best.station.lon, best.station.lat], [best.mode], best.distanceM)
+        : null;
+    this.setInspectGraphics(lngLat, best?.station ?? null, route);
     this.onInspectCallback?.({
       lngLat,
       best,
@@ -682,7 +703,7 @@ export class TransitMap {
     });
   }
 
-  private setInspectGraphics(tapLngLat: [number, number], station: StationRecord | null): void {
+  private setInspectGraphics(tapLngLat: [number, number], station: StationRecord | null, route: [number, number][] | null = null): void {
     const src = this.map.getSource('inspect-src') as GeoJSONSource | undefined;
     if (!src) return;
 
@@ -704,9 +725,10 @@ export class TransitMap {
         type: 'Feature',
         geometry: {
           type: 'LineString',
-          coordinates: [tapLngLat, [station.lon, station.lat]],
+          coordinates: route ?? [tapLngLat, [station.lon, station.lat]],
         },
-        properties: { kind: 'connector' },
+        // A traced walking route is drawn solid; the straight-line fallback stays dashed.
+        properties: { kind: route ? 'route' : 'connector' },
       });
     }
 

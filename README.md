@@ -7,11 +7,13 @@ Interactive static web app showing how much of each city—and how many of its r
 - **6 toggleable transit modes**: Metro / Subway, Tram / Light Rail, Commuter / Regional Rail, BRT, Ferry, and Funicular / Cable Car (with duplicate OSM station/platform nodes merged per mode)
 - **Zoom-adaptive population dot-density layer** built from GHSL GHS-POP 2025 (100 m equal-area grid), with fixed deterministic dot positions colored covered vs. uncovered and live people-per-dot scaling (`500` → `250` → `125` → `25` people/dot)
 - **Side-by-side & ranked comparison** across comparable city-proper boundaries grouped into 6 continents, for any combination of distance and transit modes
-- **Tap or click anywhere** inside a city to inspect walking distance to the nearest station and highlight it on the map (beyond the 2-mile limit it shows an estimate: straight line × 1.3)
+- **Tap or click anywhere** inside a city to inspect walking distance to the nearest station; when zoomed in, the actual walking route is traced on the map from the street data (each street segment carries its distance to the nearest station, so following it downhill gives the shortest path) (beyond the 2-mile limit it shows an estimate: straight line × 1.3)
 
 ### Why do some cities reach people and others don't?
 
 - **Reach curve**: share of residents covered vs walking distance from 0 to 2 mi, with up to three cities overlaid, or a per-mode view showing people reached per station. Tap the chart to set the distance.
+- **Median walk**: half of the residents live within this walk of a station (also a comparison column).
+- **Workplaces & campuses in reach**: share of non-residential buildings (GHSL GHS-BUILT-S NRES 2025: offices, campuses, hospitals, shops, industry) within the walking distance, next to the resident figures, plus a dashed curve on the reach chart. It is building footprint, not people or jobs, so it is labelled as buildings.
 - **Diagnosis**: coverage within a 0.8 km walk vs within 3.2 km. Both high = well-built network; low near but high far = good skeleton, weak last mile; both low = no real network. Shown under the reach curve and as a sortable column in the comparison table.
 - **Stations vs reach scatter** (comparison modal): coverage against stations per million residents with a logistic trend line. Cities above the line reach more people than their station count predicts.
 - **Biggest gaps**: the largest clusters of people beyond the walking distance in the area on screen, with the nearest station to each.
@@ -279,5 +281,6 @@ Population comes from GHSL GHS-POP R2023A (2025 epoch) inside each boundary. Whe
 
 - **Basemap tiles**: [OpenFreeMap](https://openfreemap.org) (based on OpenStreetMap data)
 - **Streets, boundaries & transit stations**: © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors (ODbL), built from [BBBike](https://download.bbbike.org/osm/bbbike/) and [Geofabrik](https://download.geofabrik.de/) `.osm.pbf` extracts
+- **Non-residential buildings**: Pesaresi M., Politis P. (2023): *GHS-BUILT-S R2023A - GHS built-up surface grid, derived from Sentinel2 composite and Landsat, multitemporal (1975-2030)*, NRES component, 2025 epoch. European Commission, Joint Research Centre (JRC). Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Urban centres**: European Commission, Joint Research Centre (JRC): *GHS-UCDB R2024A - GHS Urban Centre Database 2025*, V1.2. Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).
 - **Population grid**: Schiavina M., Freire S., Carioli A., MacManus K. (2023): *GHS-POP R2023A - GHS population grid multitemporal (1975-2030)*. European Commission, Joint Research Centre (JRC). DOI: [10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE](https://doi.org/10.2905/2FF68A52-5B5B-4A22-8F40-C41DA8332CFE). Licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/).

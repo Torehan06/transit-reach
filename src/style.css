@@ -1182,6 +1182,7 @@ body,
   .panel > .sheet-handle { order: 0; }
   .panel > .slider-section { order: 1; }
   .panel > .kpi-grid { order: 2; }
+  .panel > .kpi-row2 { order: 2; }
   .panel > .panel-header { order: 3; }
   .panel > .panel-collapsible { order: 4; }
 
@@ -1846,4 +1847,47 @@ body.area-urban .mobile-kpis {
 
 .barrier-head b {
   color: #fb7185;
+}
+
+/* ── Second KPI row: median walk, workplaces ── */
+.kpi-row2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.kpi-mini {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 7px 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: rgba(30, 41, 59, 0.4);
+}
+
+.kpi-mini.hidden {
+  display: none;
+}
+
+.kpi-mini-label {
+  font-size: 0.64rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.kpi-mini b {
+  font-size: 1.05rem;
+  font-variant-numeric: tabular-nums;
+}
+
+#kpi-nres {
+  color: #c4b5fd;
+}
+
+.compare-table.no-nres .nres-col {
+  display: none;
 }

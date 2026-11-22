@@ -6,6 +6,7 @@ import { cityLabel, fillCitySelect } from './regions';
 import { ReachChart } from './reach';
 import { DETOUR_FACTOR, Scenario, decodeSketch } from './scenario';
 import { CircleTool } from './circle';
+import { NresEntry, loadNres, nresFor, nresPct } from './nres';
 import { drawBarriers, findBarriers, renderBarriers } from './barriers';
 import { UcStats, loadUrbanData, ucFor, urbanManifest } from './urban';
 import { findGaps, renderGaps } from './gaps';
@@ -14,6 +15,8 @@ import { InspectResult, TransitMap } from './map';
 import {
   DEFAULT_DISTANCE_M,
   computeCityCoverage,
+  formatMinutes,
+  medianWalkM,
   formatArea,
   formatCompactPop,
   formatDistance,
@@ -253,8 +256,17 @@ function updateDistanceUI(): void {
   tickMax.textContent = state.unit === 'mi' ? '2.0 mi' : '3.2 km';
 }
 
+let nresData: Record<string, NresEntry> | null = null;
+const nresSource = (cityId: string) => nresFor(nresData, cityId, state.area === 'urban');
+
 function updateCoverageKPIs(): void {
   const city = statsCity();
+  const med = medianWalkM(city, state.enabledModes, manifest.bucket_step_m);
+  document.getElementById('kpi-median')!.textContent = med === null ? '40+ min' : formatMinutes(med);
+  const nwrap = document.getElementById('kpi-nres-wrap')!;
+  const npct = nresData ? nresPct(nresSource(state.cityId), state.enabledModes, state.distanceM, manifest.bucket_step_m) : null;
+  nwrap.classList.toggle('hidden', npct === null);
+  if (npct !== null) document.getElementById('kpi-nres')!.textContent = `${npct.toFixed(1)}%`;
   const stats = computeCityCoverage(
     city,
     state.enabledModes,
@@ -593,6 +605,20 @@ async function bootstrap(): Promise<void> {
   reachChart.overlays = pendingOverlays;
 
   bindEvents();
+
+  if (manifest.has_nres) {
+    loadNres(dataAssetUrl('data/summary_nres.json'))
+      .then((d) => {
+        nresData = d;
+        compareModal.nresSource = nresSource;
+        reachChart.nresSource = nresSource;
+        updateCoverageKPIs();
+        updateAnalysis();
+      })
+      .catch(() => {
+        /* optional layer; the site works without it */
+      });
+  }
 
   transitMap = new TransitMap(document.getElementById('map')!, {
     onReady: () => {

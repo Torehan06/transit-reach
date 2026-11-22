@@ -13,7 +13,7 @@ export function modesToMask(enabledModes: Set<ModeCode>): number {
   return mask;
 }
 
-function interpolateCurve(curve: number[], distanceM: number, stepM: number): number {
+export function interpolateCurve(curve: number[], distanceM: number, stepM: number): number {
   if (distanceM <= 0) return curve[0] ?? 0;
   const maxIdx = curve.length - 1;
   const exactIdx = distanceM / stepM;
@@ -124,4 +124,27 @@ export function peoplePerDotForZoom(zoom: number): number {
   if (z === 11) return 250;
   if (z === 12) return 125;
   return 25;
+}
+
+/**
+ * Median walk (m) to the nearest selected station: the distance within which
+ * half of the residents live. Null when fewer than half are within 3.3 km.
+ */
+export function medianWalkM(city: CitySummary, enabledModes: Set<ModeCode>, bucketStepM: number): number | null {
+  const mask = modesToMask(enabledModes) & city.available_modes_mask;
+  const curve = mask ? city.pop_curves[String(mask)] : undefined;
+  if (!curve || city.ghsl_pop <= 0) return null;
+  const half = city.ghsl_pop / 2;
+  for (let i = 0; i < curve.length; i++) {
+    if (curve[i] >= half) {
+      if (i === 0) return 0;
+      const frac = (half - curve[i - 1]) / Math.max(1, curve[i] - curve[i - 1]);
+      return (i - 1 + frac) * bucketStepM;
+    }
+  }
+  return null;
+}
+
+export function formatMinutes(meters: number): string {
+  return `${Math.max(1, Math.round(meters / WALK_SPEED_M_PER_MIN))} min`;
 }

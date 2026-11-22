@@ -54,6 +54,8 @@ export interface SummaryManifest {
   cities: Record<string, CitySummary>;
   /** summary_uc.json exists (urban-area view available). */
   has_uc?: boolean;
+  /** summary_nres.json exists (non-residential buildings layer available). */
+  has_nres?: boolean;
 }
 
 /** Compact tuple stored in public/data/stations/<city>.json: [id, mode, name, lon, lat, inside] */

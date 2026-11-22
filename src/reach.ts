@@ -11,6 +11,7 @@
  * ½ mile; one whose stations sit in highway medians or rail corridors does not.
  */
 import { computeCityCoverage, modesToMask } from './stats';
+import { NresStats, nresPct } from './nres';
 import { CitySummary, DistanceUnit, MODES, ModeCode, SummaryManifest } from './types';
 
 const W = 320;
@@ -160,6 +161,9 @@ export class ReachChart {
     this.render();
   }
 
+  /** Optional non-residential curve for the current city (dashed violet). */
+  public nresSource: ((cityId: string) => NresStats | null) | null = null;
+
   public init(manifest: SummaryManifest, fillSelect: (sel: HTMLSelectElement) => void): void {
     this.manifest = manifest;
     fillSelect(this.overlaySelect);
@@ -218,6 +222,21 @@ export class ReachChart {
           `<button type="button" class="reach-chip" data-remove="${id}" title="Remove"><span class="reach-swatch" style="background:${OVERLAY_COLORS[i]}"></span>${oc.name}<b>${v === null ? '—' : v.toFixed(0) + '%'}</b><span class="reach-x">×</span></button>`
         );
       });
+      const nr = this.nresSource?.(s.cityId) ?? null;
+      if (nr) {
+        const pts: string[] = [];
+        for (let d = 0; d <= MAX_M; d += step) {
+          const v = nresPct(nr, s.enabledModes, d, step);
+          if (v === null) break;
+          pts.push(`${pts.length ? 'L' : 'M'}${x(d).toFixed(1)},${y(v).toFixed(1)}`);
+        }
+        if (pts.length) svg.appendChild(el('path', { d: pts.join(''), class: 'reach-line', stroke: '#c4b5fd', 'stroke-width': 1.8, 'stroke-dasharray': '4 3' }));
+        const nv = nresPct(nr, s.enabledModes, s.distanceM, step);
+        if (nv !== null)
+          legendRows.push(
+            `<span class="reach-chip" title="Non-residential buildings (offices, campuses, hospitals, shops): footprint, not people"><span class="reach-swatch dashed" style="background:#c4b5fd"></span>Workplaces<b>${nv.toFixed(0)}%</b></span>`
+          );
+      }
       const p = curvePath(city, s.enabledModes, step);
       if (p) svg.appendChild(el('path', { d: p, class: 'reach-line', stroke: '#2dd4bf', 'stroke-width': 2.6 }));
       const v = coverageAt(city, s.enabledModes, s.distanceM, step);

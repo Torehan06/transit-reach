@@ -43,6 +43,7 @@ TILES_DIR = PUBLIC_DATA / "tiles"
 STATIONS_DIR = PUBLIC_DATA / "stations"
 SUMMARY_PATH = PUBLIC_DATA / "summary.json"
 SUMMARY_UC_PATH = PUBLIC_DATA / "summary_uc.json"
+SUMMARY_NRES_PATH = PUBLIC_DATA / "summary_nres.json"
 UCDB_CITIES = Path(__file__).resolve().parent / "ucdb_cities.json"
 UC_PAD_DEG = 0.06  # > 3.5 km street/station buffer around the urban centre
 
@@ -71,6 +72,12 @@ def load_summary() -> Dict[str, Any]:
             for cid, val in uc.items():
                 if cid in summary["cities"]:
                     summary["cities"][cid]["uc"] = val
+        if SUMMARY_NRES_PATH.exists():
+            with open(SUMMARY_NRES_PATH, "r", encoding="utf-8") as f:
+                nres = json.load(f).get("cities", {})
+            for cid, val in nres.items():
+                if cid in summary["cities"]:
+                    summary["cities"][cid]["nres"] = val
         return summary
     return {
         "bucket_step_m": BUCKET_STEP_M,
@@ -96,13 +103,16 @@ def save_summary(summary: Dict[str, Any], ordered_ids: List[str]) -> None:
 
     # Urban-centre stats live in their own file so the default page load stays small.
     main = dict(summary)
-    main["cities"] = {cid: {k: v for k, v in val.items() if k != "uc"} for cid, val in ordered_cities.items()}
+    main["cities"] = {cid: {k: v for k, v in val.items() if k not in ("uc", "nres")} for cid, val in ordered_cities.items()}
     uc = {cid: val["uc"] for cid, val in ordered_cities.items() if val.get("uc")}
+    nres = {cid: val["nres"] for cid, val in ordered_cities.items() if val.get("nres")}
+    main["has_nres"] = len(nres) >= 0.9 * max(1, len(ordered_cities))
     # Only advertise the urban-area view once (nearly) every city has it.
     main["has_uc"] = len(uc) >= 0.9 * max(1, len(ordered_cities))
     for path, payload in (
         (SUMMARY_PATH, main),
         (SUMMARY_UC_PATH, {"source": "GHS-UCDB R2024A (EC JRC, CC BY 4.0)", "cities": uc}),
+        (SUMMARY_NRES_PATH, {"source": "GHS-BUILT-S NRES R2023A, 2025 epoch (EC JRC, CC BY 4.0)", "cities": nres}),
     ):
         tmp_path = path.with_suffix(".json.tmp")
         with open(tmp_path, "w", encoding="utf-8") as f:
@@ -343,6 +353,67 @@ def add_uc(entry: Dict[str, Any], city: Dict[str, Any], ucdb: Dict[str, Any], by
             (CACHE_DIR / "pbf" / Path(city["uc_pbf"]["path"]).name).unlink(missing_ok=True)
 
 
+def build_nres_stats(city: Dict[str, Any], ucdb: Dict[str, Any], by_id: Dict[str, Dict[str, Any]]) -> Dict[str, Any]:
+    """Stats-only pass: non-residential built-up surface within walking distance,
+    for the city limits and (for the city that carries it) its urban centre.
+    One street graph over city limits ∪ urban centre serves both."""
+    from shapely.geometry import mapping, shape
+    from shapely.ops import unary_union
+
+    from nres import process_nres
+    from osm_extract import ensure_city_pbf, extract_boundary
+
+    t0 = time.time()
+    cid = city["id"]
+    admin_pbf = ensure_city_pbf(city, CACHE_DIR)
+    admin, _, _ = extract_boundary(admin_pbf, city)
+    uc = ucdb.get(cid)
+    uc_geom = None
+    uc_pointer = None
+    if uc:
+        primary = uc_primary(cid, ucdb, by_id)
+        if primary == cid:
+            uc_geom = shape(uc["geom"])
+        else:
+            uc_pointer = {"same_as": primary}
+    area = unary_union([admin, uc_geom]) if uc_geom is not None else admin
+    minx, miny, maxx, maxy = area.bounds
+    ncity = dict(city)
+    ncity["id"] = f"{cid}__nres"
+    ncity["bbox"] = [
+        round(min(minx - UC_PAD_DEG, city["bbox"][0]), 4),
+        round(min(miny - UC_PAD_DEG, city["bbox"][1]), 4),
+        round(max(maxx + UC_PAD_DEG, city["bbox"][2]), 4),
+        round(max(maxy + UC_PAD_DEG, city["bbox"][3]), 4),
+    ]
+    ncity["boundary"] = {"geojson": mapping(area)}
+    if uc_geom is not None and city.get("uc_pbf"):
+        ncity["pbf"] = city["uc_pbf"]
+    osm_data = extract_city_osm(ncity, CACHE_DIR)
+    routing = compute_walking_distances(
+        node_xy=osm_data.node_xy,
+        edge_u=osm_data.edge_u,
+        edge_v=osm_data.edge_v,
+        edge_len=osm_data.edge_len,
+        stations=osm_data.stations,
+    )
+    out: Dict[str, Any] = {"city": process_nres(admin, osm_data.utm_crs, routing, CACHE_DIR / "ghsl")}
+    if uc_geom is not None:
+        out["uc"] = process_nres(uc_geom, osm_data.utm_crs, routing, CACHE_DIR / "ghsl")
+    elif uc_pointer:
+        out["uc"] = uc_pointer
+
+    def pct(r: Dict[str, Any]) -> float:
+        c = r.get("curves", {}).get(str(r.get("available_modes_mask")))
+        return c[805 // BUCKET_STEP_M] / r["total_m2"] * 100 if c and r.get("total_m2") else 0.0
+
+    msg = f"  [NRES] city {out['city']['total_m2'] / 1e6:.1f} km² non-res, {pct(out['city']):.1f}% within 0.8 km"
+    if uc_geom is not None:
+        msg += f"; urban centre {out['uc']['total_m2'] / 1e6:.1f} km², {pct(out['uc']):.1f}%"
+    print(msg + f" ({time.time() - t0:.1f}s)")
+    return out
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Build Transit Reach city data & PMTiles.")
     parser.add_argument("cities", nargs="*", help="City IDs to build")
@@ -352,6 +423,7 @@ def main() -> None:
     parser.add_argument("--continue-on-error", action="store_true", help="Keep building remaining cities if one fails")
     parser.add_argument("--uc-only", action="store_true", help="Only (re)compute urban-centre stats for already-built cities")
     parser.add_argument("--no-uc", action="store_true", help="Skip the urban-centre pass")
+    parser.add_argument("--nres-only", action="store_true", help="Only (re)compute non-residential built-up stats for built cities")
     args = parser.parse_args()
 
     all_cities = load_cities_config()
@@ -376,10 +448,43 @@ def main() -> None:
 
     for idx, city in enumerate(targets):
         cid = city["id"]
-        if not args.uc_only and args.skip_existing and (TILES_DIR / f"{cid}.pmtiles").exists() and cid in summary["cities"]:
+        if not (args.uc_only or args.nres_only) and args.skip_existing and (TILES_DIR / f"{cid}.pmtiles").exists() and cid in summary["cities"]:
             print(f"Skipping {cid} (already built)")
             continue
         try:
+            if args.nres_only:
+                if cid not in summary["cities"]:
+                    print(f"Skipping {cid} (not built yet)")
+                    continue
+                if args.skip_existing and summary["cities"][cid].get("nres"):
+                    print(f"Skipping {cid} (non-residential done)")
+                    continue
+                print(f"\n=== {city['name']} ({cid}) non-residential ===")
+                entry = summary["cities"][cid]
+                try:
+                    entry["nres"] = build_nres_stats(city, ucdb, by_id)
+                except Exception as exc:
+                    print(f"  [NRES][ERROR] {cid}: {exc}", file=sys.stderr)
+                finally:
+                    shutil.rmtree(TMP_DIR / f"{cid}__nres", ignore_errors=True)
+                    (CACHE_DIR / "pbf" / f"city_{cid}__nres.osm.pbf").unlink(missing_ok=True)
+                    if city.get("uc_pbf", {}).get("path"):
+                        (CACHE_DIR / "pbf" / Path(city["uc_pbf"]["path"]).name).unlink(missing_ok=True)
+                summary["cities"][cid] = entry
+                save_summary(summary, ordered_ids)
+                if args.cleanup:
+                    pbf_cfg = city["pbf"]
+                    if pbf_cfg["source"] == "bbbike":
+                        (CACHE_DIR / "pbf" / f"{pbf_cfg['name']}.osm.pbf").unlink(missing_ok=True)
+                    else:
+                        (CACHE_DIR / "pbf" / f"city_{cid}.osm.pbf").unlink(missing_ok=True)
+                        raw_name = Path(pbf_cfg["path"]).name
+                        if not any(
+                            c["pbf"].get("source") == "geofabrik" and Path(c["pbf"]["path"]).name == raw_name
+                            for c in targets[idx + 1 :]
+                        ):
+                            (CACHE_DIR / "pbf" / raw_name).unlink(missing_ok=True)
+                continue
             if args.uc_only:
                 if cid not in summary["cities"]:
                     print(f"Skipping {cid} (not built yet)")
