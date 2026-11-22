@@ -98,7 +98,8 @@ def save_summary(summary: Dict[str, Any], ordered_ids: List[str]) -> None:
     main = dict(summary)
     main["cities"] = {cid: {k: v for k, v in val.items() if k != "uc"} for cid, val in ordered_cities.items()}
     uc = {cid: val["uc"] for cid, val in ordered_cities.items() if val.get("uc")}
-    main["has_uc"] = any("pop_curves" in v for v in uc.values())
+    # Only advertise the urban-area view once (nearly) every city has it.
+    main["has_uc"] = len(uc) >= 0.9 * max(1, len(ordered_cities))
     for path, payload in (
         (SUMMARY_PATH, main),
         (SUMMARY_UC_PATH, {"source": "GHS-UCDB R2024A (EC JRC, CC BY 4.0)", "cities": uc}),
