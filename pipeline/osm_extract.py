@@ -142,6 +142,19 @@ def _download_file(url: str, dest: Path) -> Path:
         return dest
     print(f"  Downloading {url}...")
     resp = requests.get(url, stream=True, timeout=180)
+    if resp.status_code == 404:
+        # Geofabrik's "-latest" can redirect to a dated file (-YYMMDD) that is not
+        # uploaded yet while the daily update runs; fall back to the previous days.
+        m = re.search(r"-(\d{6})\.osm\.pbf$", resp.url)
+        if m:
+            import datetime as _dt
+            day = _dt.datetime.strptime(m.group(1), "%y%m%d")
+            for back in (1, 2):
+                alt = resp.url[: m.start(1)] + (day - _dt.timedelta(days=back)).strftime("%y%m%d") + ".osm.pbf"
+                print(f"  {resp.url} not published yet, trying {alt}")
+                resp = requests.get(alt, stream=True, timeout=180)
+                if resp.status_code != 404:
+                    break
     resp.raise_for_status()
     tmp = dest.with_suffix(dest.suffix + ".part")
     with open(tmp, "wb") as f:
