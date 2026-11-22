@@ -578,6 +578,8 @@ function bindEvents(): void {
     } else {
       onSettingsChanged();
     }
+    if (manifest.has_uc && pendingArea !== state.area) void setArea(pendingArea);
+    if (pendingStreetMode !== streetMode) setStreetMode(pendingStreetMode);
   });
 
   let wasDesktop = window.innerWidth >= 768;
