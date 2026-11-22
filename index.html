@@ -176,6 +176,14 @@
             <div id="gaps-list" class="gaps-list"><p class="gaps-empty">The largest clusters of people beyond the walking distance, in the area on screen.</p></div>
           </section>
 
+          <section class="control-section gaps-section">
+            <div class="section-row">
+              <span class="section-label">Walking barriers</span>
+              <button id="barriers-btn" class="text-btn" type="button">Find in view</button>
+            </div>
+            <div id="barriers-list" class="gaps-list"><p class="gaps-empty">People close to a station as the crow flies but far from one on foot: highways, rail lines, rivers, superblocks.</p></div>
+          </section>
+
           <p class="inspect-hint">Tap anywhere inside the city boundary to see walking distance to the nearest station.</p>
         </div>
       </aside>
@@ -232,8 +240,9 @@
       <!-- Floating Legend & Attribution -->
       <div class="map-legend" id="map-legend" aria-label="Map legend">
         <div class="legend-items">
-          <span class="legend-item"><span class="legend-line covered"></span>Within reach</span>
-          <span class="legend-item"><span class="legend-line uncovered"></span>Beyond reach</span>
+          <span class="legend-item legend-walk" title="Street colour = walking time to the nearest selected station. Streets beyond the slider distance are faded.">
+            <span class="legend-ramp-wrap"><span class="legend-ramp"></span><span class="legend-ramp-ticks"><i>5</i><i>10</i><i>15</i><i>20</i><i>30 min</i></span></span>
+          </span>
           <span class="legend-item" id="legend-dots-item">
             <span class="legend-dot dot-covered"></span><span class="legend-dot dot-uncovered"></span>
             <span id="legend-ppd">1 dot = 100 people</span>
@@ -293,7 +302,7 @@
                     <option value="popPct">Sort: Population %</option>
                     <option value="areaPct">Sort: Area %</option>
                     <option value="coveredPop">Sort: Covered People</option>
-                    <option value="closeIn">Sort: Close-in share</option>
+                    <option value="diag">Sort: Diagnosis</option>
                     <option value="stations">Sort: Total Stations</option>
                     <option value="name">Sort: City Name</option>
                   </select>
@@ -307,7 +316,7 @@
                       <th>City</th>
                       <th>Pop covered</th>
                       <th>Area covered</th>
-                      <th title="Coverage at ½ mile ÷ coverage at 1 mile: how much of the city's reach is a short walk">Close-in</th>
+                      <th title="Coverage within a 0.8 km walk → within a 3.2 km walk">Diagnosis</th>
                       <th>Stations</th>
                     </tr>
                   </thead>

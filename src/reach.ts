@@ -6,7 +6,7 @@
  *  - "Cities": the current city (current modes) plus up to three overlay cities.
  *  - "By mode": one curve per mode for the current city, with people reached per station.
  *
- * Also computes the "close-in share": coverage at ½ mile ÷ coverage at 1 mile.
+ * Also computes the city diagnosis: coverage at 0.8 km vs at 3.2 km.
  * A city whose stations sit among its homes gets most of its 1-mile reach inside
  * ½ mile; one whose stations sit in highway medians or rail corridors does not.
  */
@@ -18,7 +18,6 @@ const H = 168;
 const PAD = { l: 34, r: 10, t: 10, b: 24 };
 const MAX_M = 3200;
 const HALF_MI = 805;
-const ONE_MI = 1609;
 const OVERLAY_COLORS = ['#fbbf24', '#f472b6', '#a78bfa'];
 const SVG_NS = 'http://www.w3.org/2000/svg';
 
@@ -43,16 +42,40 @@ export function coverageAt(
   return computeCityCoverage(city, modes, distanceM, step).popPct;
 }
 
-/** Close-in share (0-100): coverage at ½ mile ÷ coverage at 1 mile. Null when 1-mile coverage is too small to mean much. */
-export function closeInShare(
-  city: CitySummary,
-  modes: Set<ModeCode>,
-  step: number
-): number | null {
-  const near = coverageAt(city, modes, HALF_MI, step);
-  const far = coverageAt(city, modes, ONE_MI, step);
-  if (near === null || far === null || far < 10) return null;
-  return Math.min(100, (near / far) * 100);
+export type DiagnosisKey = 'well' | 'core' | 'skeleton' | 'none';
+
+export interface Diagnosis {
+  near: number; // % of residents within 0.8 km (½ mi) walk
+  far: number; // % within 3.2 km (2 mi)
+  key: DiagnosisKey;
+  label: string;
+  short: string;
+  blurb: string;
+  rank: number; // for sorting: higher = better built
+}
+
+const NEAR_M = 805;
+const FAR_M = 3200;
+
+/**
+ * One-line diagnosis from two points on the reach curve:
+ * coverage within a short walk (0.8 km) vs within a long walk (3.2 km).
+ * Both high = well-built network; low near but high far = good skeleton, weak
+ * last mile (stations exist but not where people live); both low = no real
+ * network. Replaces the earlier "close-in share" (½ mi ÷ 1 mi), which saturated
+ * for dense networks and moved almost in lockstep with plain coverage.
+ */
+export function diagnose(city: CitySummary, modes: Set<ModeCode>, step: number): Diagnosis | null {
+  const near = coverageAt(city, modes, NEAR_M, step);
+  const far = coverageAt(city, modes, FAR_M, step);
+  if (near === null || far === null) return null;
+  if (far < 45)
+    return { near, far, key: 'none', rank: 0, label: 'No real network', short: 'No network', blurb: 'most people are a long way from any station' };
+  if (near >= 60)
+    return { near, far, key: 'well', rank: 3, label: 'Well-built network', short: 'Well-built', blurb: 'stations sit among homes' };
+  if (near >= 40)
+    return { near, far, key: 'core', rank: 2, label: 'Solid core, thinner edges', short: 'Solid core', blurb: 'good coverage in the centre, gaps further out' };
+  return { near, far, key: 'skeleton', rank: 1, label: 'Good skeleton, weak last mile', short: 'Weak last mile', blurb: 'stations exist but are not where most people live' };
 }
 
 const x = (m: number) => PAD.l + (Math.min(m, MAX_M) / MAX_M) * (W - PAD.l - PAD.r);
@@ -234,18 +257,13 @@ export class ReachChart {
       })
     );
 
-    // Insight line
-    const share = closeInShare(city, s.enabledModes, step);
-    const half = coverageAt(city, s.enabledModes, HALF_MI, step);
-    const one = coverageAt(city, s.enabledModes, ONE_MI, step);
-    const halfLbl = s.unit === 'mi' ? '½ mi' : '0.8 km';
-    const oneLbl = s.unit === 'mi' ? '1 mi' : '1.6 km';
-    if (share === null || half === null || one === null) {
-      this.insight.innerHTML = `Too little coverage at ${oneLbl} for a close-in share.`;
-    } else {
-      const verdict = share >= 70 ? 'stations sit among homes' : share >= 55 ? 'mixed' : 'many people live a long walk from a station';
-      this.insight.innerHTML = `<b>Close-in share ${share.toFixed(0)}%</b> — ${half.toFixed(0)}% within ${halfLbl} vs ${one.toFixed(0)}% within ${oneLbl} (${verdict}).`;
-    }
+    // Insight line: diagnosis from 0.8 km vs 3.2 km coverage.
+    const dg = diagnose(city, s.enabledModes, step);
+    const nearLbl = s.unit === 'mi' ? '½ mi' : '0.8 km';
+    const farLbl = s.unit === 'mi' ? '2 mi' : '3.2 km';
+    this.insight.innerHTML = dg
+      ? `<span class="diag diag-${dg.key}">${dg.label}</span> ${dg.near.toFixed(0)}% within ${nearLbl} vs ${dg.far.toFixed(0)}% within ${farLbl}: ${dg.blurb}.`
+      : 'No stations for the selected modes.';
   }
 }
 

@@ -4,11 +4,26 @@ import { CitySummary, MODES, MODE_BY_CODE, ModeCode, StationRecord } from './typ
 
 const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 
-const COLOR_STREET_COVERED = '#2dd4bf';
 const COLOR_STREET_UNCOVERED = 'rgba(148, 163, 184, 0.16)';
 const COLOR_DOT_COVERED = '#fbbf24';
-const COLOR_DOT_UNCOVERED = '#64748b';
+const COLOR_DOT_UNCOVERED = '#94a3b8';
+
+/**
+ * Street colour by walking time to the nearest selected station (5 km/h):
+ * bright under 5 min, fading through 10/15/20 min, dark past ~30 min.
+ * Exported so the legend can draw the same ramp.
+ */
+export const WALK_RAMP: [number, string][] = [
+  [0, '#ccfbf1'],
+  [417, '#2dd4bf'], // 5 min
+  [833, '#38bdf8'], // 10 min
+  [1250, '#818cf8'], // 15 min
+  [1667, '#a78bfa'], // 20 min
+  [2500, '#6d28d9'], // 30 min
+  [3300, '#3b0764'],
+];
 const FAR_DIST = 999999;
+const MIN_TILE_ZOOM = 8; // city PMTiles have no tiles below this
 
 export interface InspectModeHit {
   mode: ModeCode;
@@ -83,7 +98,7 @@ export class TransitMap {
       style: OPENFREEMAP_STYLE,
       center: [32.85, 39.92],
       zoom: 11,
-      minZoom: 7,
+      minZoom: MIN_TILE_ZOOM,
       maxZoom: 17.5,
       attributionControl: false,
       pitchWithRotate: false,
@@ -226,16 +241,22 @@ export class TransitMap {
     return ['min', ...args] as ExpressionSpecification;
   }
 
-  private buildStreetColorExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | string {
+  private buildStreetColorExpr(modes: ModeCode[], _distanceM: number): ExpressionSpecification | string {
+    // Gradient by walking time, independent of the slider: an 850 m gap and a
+    // 4 km desert should not look the same.
     const minExpr = this.buildMinDistExpression(modes);
-    if (!minExpr || distanceM <= 0) return COLOR_STREET_UNCOVERED;
-    return ['case', ['<=', minExpr, distanceM], COLOR_STREET_COVERED, COLOR_STREET_UNCOVERED];
+    if (!minExpr) return COLOR_STREET_UNCOVERED;
+    const stops = WALK_RAMP.flatMap(([d, c]) => [d, c]);
+    return ['case', ['>', minExpr, 3300], COLOR_STREET_UNCOVERED, ['interpolate', ['linear'], minExpr, ...stops]] as ExpressionSpecification;
   }
 
   private buildStreetOpacityExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | number {
+    // Within the slider distance: full strength. Beyond it: dimmed, so that the
+    // grey population dots (people with no station) carry the signal and
+    // empty land (highways, cemeteries, campuses) reads as merely dark.
     const minExpr = this.buildMinDistExpression(modes);
-    if (!minExpr || distanceM <= 0) return 0.45;
-    return ['case', ['<=', minExpr, distanceM], 0.88, 0.42];
+    if (!minExpr) return 0.4;
+    return ['case', ['<=', minExpr, distanceM], 0.95, ['>', minExpr, 3300], 0.35, 0.55];
   }
 
   private buildDotColorExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | string {
@@ -246,8 +267,8 @@ export class TransitMap {
 
   private buildDotOpacityExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | number {
     const minExpr = this.buildMinDistExpression(modes);
-    if (!minExpr || distanceM <= 0) return 0.36;
-    return ['case', ['<=', minExpr, distanceM], 0.92, 0.34];
+    if (!minExpr || distanceM <= 0) return 0.6;
+    return ['case', ['<=', minExpr, distanceM], 0.92, 0.6];
   }
 
   public async loadCity(
@@ -402,13 +423,17 @@ export class TransitMap {
           right: 20,
         };
 
-    this.map.fitBounds(
+    // City tiles start at zoom 8 (nothing renders below it), so never frame a
+    // big city (Istanbul, Karachi) on a narrow phone below that: crop instead.
+    const cam = this.map.cameraForBounds(
       [
         [west, south],
         [east, north],
       ],
-      { padding, duration, maxZoom: 12.5 }
+      { padding, maxZoom: 12.5 }
     );
+    if (!cam || cam.zoom === undefined) return;
+    this.map.easeTo({ center: cam.center, zoom: Math.max(MIN_TILE_ZOOM, cam.zoom), bearing: this.map.getBearing(), duration });
   }
 
   public updateFilter(

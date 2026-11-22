@@ -6,6 +6,7 @@ import { cityLabel, fillCitySelect } from './regions';
 import { ReachChart } from './reach';
 import { DETOUR_FACTOR, Scenario, decodeSketch } from './scenario';
 import { CircleTool } from './circle';
+import { drawBarriers, findBarriers, renderBarriers } from './barriers';
 import { UcStats, loadUrbanData, ucFor, urbanManifest } from './urban';
 import { findGaps, renderGaps } from './gaps';
 import { BottomSheet } from './sheet';
@@ -364,7 +365,19 @@ function escapeHtml(s: string): string {
   });
 }
 
+const BARRIERS_HINT =
+  '<p class="gaps-empty">People close to a station as the crow flies but far from one on foot: highways, rail lines, rivers, superblocks.</p>';
+let barriersModesKey = '';
+function resetBarriers(): void {
+  const el = document.getElementById('barriers-list');
+  if (el) el.innerHTML = BARRIERS_HINT;
+  if (transitMap) drawBarriers(transitMap, []);
+  barriersModesKey = '';
+}
+
 function updateAnalysis(): void {
+  const modesKey = [...state.enabledModes].sort().join('');
+  if (barriersModesKey && barriersModesKey !== modesKey) resetBarriers();
   const city = statsCity();
   reachChart?.update({ cityId: state.cityId, enabledModes: state.enabledModes, distanceM: state.distanceM, unit: state.unit });
   circleTool?.update({ modes: [...state.enabledModes], distanceM: state.distanceM, unit: state.unit });
@@ -441,6 +454,7 @@ async function selectCity(cityId: string): Promise<void> {
   if (scenario?.isActive()) scenario.stop();
   if (circleTool?.isActive()) circleTool.stop();
   gapsList.innerHTML = '<p class="gaps-empty">The largest clusters of people beyond the walking distance, in the area on screen.</p>';
+  resetBarriers();
   updateAnalysis();
   sheet.snapTo(sheet.current, false); // content height may have changed
   syncHashState();
@@ -619,6 +633,16 @@ async function bootstrap(): Promise<void> {
     if (active) sheet.snapTo('peek');
     updateAnalysis();
   }, () => syncHashState());
+
+  document.getElementById('barriers-btn')!.addEventListener('click', () => {
+    const res = findBarriers(transitMap, [...state.enabledModes]);
+    drawBarriers(transitMap, res.points);
+    barriersModesKey = [...state.enabledModes].sort().join('');
+    renderBarriers(document.getElementById('barriers-list')!, res, state.unit, (c) =>
+      transitMap.map.flyTo({ center: [c.lon, c.lat], zoom: Math.max(transitMap.map.getZoom(), 14) })
+    );
+    sheet.snapTo(sheet.current, false);
+  });
 
   document.getElementById('gaps-btn')!.addEventListener('click', () => {
     const { gaps, peoplePerDot } = findGaps(transitMap, [...state.enabledModes], state.distanceM);

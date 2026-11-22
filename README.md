@@ -3,6 +3,7 @@
 Interactive static web app showing how much of each city—and how many of its residents—are within walking distance of rail and rapid transit across **148 cities on 6 continents**.
 
 - **Street-network walking distance** (not straight-line circles) from 0 to 2 miles (0 to 3.22 km), with instant client-side slider updates and a `mi` / `km` toggle
+- **Streets coloured by walking time** to the nearest station (bright under 5 min, fading through 10/15/20, dark past 30), so an 850 m gap no longer looks like a 4 km desert. The slider sets the threshold for the stats; streets beyond it are dimmed so the grey population dots, not empty land, show who is unserved
 - **6 toggleable transit modes**: Metro / Subway, Tram / Light Rail, Commuter / Regional Rail, BRT, Ferry, and Funicular / Cable Car (with duplicate OSM station/platform nodes merged per mode)
 - **Zoom-adaptive population dot-density layer** built from GHSL GHS-POP 2025 (100 m equal-area grid), with fixed deterministic dot positions colored covered vs. uncovered and live people-per-dot scaling (`500` → `250` → `125` → `25` people/dot)
 - **Side-by-side & ranked comparison** across comparable city-proper boundaries grouped into 6 continents, for any combination of distance and transit modes
@@ -11,9 +12,10 @@ Interactive static web app showing how much of each city—and how many of its r
 ### Why do some cities reach people and others don't?
 
 - **Reach curve**: share of residents covered vs walking distance from 0 to 2 mi, with up to three cities overlaid, or a per-mode view showing people reached per station. Tap the chart to set the distance.
-- **Close-in share**: coverage within ½ mi ÷ coverage within 1 mi. High means stations sit among homes; low means many people live a long walk away. Also a sortable column in the comparison table.
+- **Diagnosis**: coverage within a 0.8 km walk vs within 3.2 km. Both high = well-built network; low near but high far = good skeleton, weak last mile; both low = no real network. Shown under the reach curve and as a sortable column in the comparison table.
 - **Stations vs reach scatter** (comparison modal): coverage against stations per million residents with a logistic trend line. Cities above the line reach more people than their station count predicts.
 - **Biggest gaps**: the largest clusters of people beyond the walking distance in the area on screen, with the nearest station to each.
+- **Walking barriers**: people within 800 m of a station as the crow flies who have to walk at least twice as far (highways, rail lines, rivers, superblocks), marked on the map and grouped by nearby station.
 - **Sketch a line**: tap to draw a hypothetical line, pick station spacing (400 m / 800 m / 1.6 km) and see how many people it would newly reach. Walking distance to a sketched station is straight-line distance × a detour factor measured from the city's own street network (real walking distances of nearby population dots to existing stations), so it is an estimate, not a routed walk. Sketches are stored in the URL (`sk=`) and can be shared.
 - **Measure a circle**: drop a circle anywhere, set its radius (200 m to 5 km) and see how many people live inside it, which stations by mode fall inside it, and what share of those people are within the current walking distance of a station. Stored in the URL (`c=`).
 - **City limits / Urban area**: administrative boundaries differ a lot between countries (Paris = 20 arrondissements, Istanbul = 36 districts, US = city limits). The urban-area view recomputes every statistic over the city's [GHS-UCDB](https://human-settlement.emergency.copernicus.eu/ghs_ucdb_2024.php) urban centre, one definition for every city (contiguous 1 km² cells of at least 1,500 people/km², at least 50,000 people). Dots are still only drawn inside the city limits; the urban centre is shown as a dashed outline. Cities that share one urban centre (Tokyo, Yokohama, Kawasaki) appear once in rankings.

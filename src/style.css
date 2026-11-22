@@ -1767,3 +1767,83 @@ body.area-urban .urban-tag {
 body.area-urban .mobile-kpis {
   border-color: rgba(251, 191, 36, 0.55);
 }
+
+/* ── Walking-time ramp legend ── */
+.legend-ramp-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  width: 132px;
+}
+
+.legend-ramp {
+  height: 5px;
+  border-radius: 3px;
+  background: linear-gradient(
+    90deg,
+    #ccfbf1 0%,
+    #2dd4bf 12.6%,
+    #38bdf8 25.2%,
+    #818cf8 37.9%,
+    #a78bfa 50.5%,
+    #6d28d9 75.8%,
+    #3b0764 100%
+  );
+}
+
+.legend-ramp-ticks {
+  position: relative;
+  height: 10px;
+  font-size: 0.58rem;
+  color: var(--text-dim);
+}
+
+.legend-ramp-ticks i {
+  position: absolute;
+  font-style: normal;
+  transform: translateX(-50%);
+}
+
+.legend-ramp-ticks i:nth-child(1) { left: 12.6%; }
+.legend-ramp-ticks i:nth-child(2) { left: 25.2%; }
+.legend-ramp-ticks i:nth-child(3) { left: 37.9%; }
+.legend-ramp-ticks i:nth-child(4) { left: 50.5%; }
+.legend-ramp-ticks i:nth-child(5) { left: 75.8%; white-space: nowrap; }
+
+/* ── City diagnosis ── */
+.diag {
+  display: inline-block;
+  font-weight: 800;
+  font-size: 0.72rem;
+  padding: 1px 7px;
+  border-radius: 999px;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+
+.diag-well { background: rgba(45, 212, 191, 0.16); color: #5eead4; }
+.diag-core { background: rgba(56, 189, 248, 0.16); color: #7dd3fc; }
+.diag-skeleton { background: rgba(251, 191, 36, 0.16); color: #fcd34d; }
+.diag-none { background: rgba(248, 113, 113, 0.16); color: #fca5a5; }
+
+.diag-col .diag {
+  font-size: 0.66rem;
+}
+
+.diag-nums {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.barrier-head {
+  margin: 0 0 6px;
+  font-size: 0.76rem;
+  line-height: 1.45;
+  color: var(--text-muted);
+}
+
+.barrier-head b {
+  color: #fb7185;
+}

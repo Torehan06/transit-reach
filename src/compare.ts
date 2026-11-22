@@ -5,17 +5,17 @@ import {
   formatDistance,
 } from './stats';
 import { CONTINENTS, continentOf, fillCitySelect } from './regions';
-import { closeInShare } from './reach';
+import { Diagnosis, diagnose } from './reach';
 import { renderScatter } from './scatter';
 import { rankable } from './urban';
 import { AppState, CitySummary, CoverageStats, MODES, SummaryManifest } from './types';
 
-type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'closeIn' | 'stations' | 'name';
+type SortKey = 'popPct' | 'areaPct' | 'coveredPop' | 'diag' | 'stations' | 'name';
 
 interface RowData {
   city: CitySummary;
   stats: CoverageStats;
-  closeIn: number | null;
+  diag: Diagnosis | null;
 }
 
 export class CompareModal {
@@ -233,7 +233,7 @@ export class CompareModal {
           this.state!.distanceM,
           this.manifest!.bucket_step_m
         ),
-        closeIn: closeInShare(city, this.state!.enabledModes, this.manifest!.bucket_step_m),
+        diag: diagnose(city, this.state!.enabledModes, this.manifest!.bucket_step_m),
       }));
 
     rows.sort((a, b) => {
@@ -244,8 +244,8 @@ export class CompareModal {
           return b.stats.areaPct - a.stats.areaPct;
         case 'coveredPop':
           return b.stats.coveredPop - a.stats.coveredPop;
-        case 'closeIn':
-          return (b.closeIn ?? -1) - (a.closeIn ?? -1);
+        case 'diag':
+          return (b.diag?.rank ?? -1) - (a.diag?.rank ?? -1) || (b.diag?.near ?? 0) - (a.diag?.near ?? 0);
         case 'stations':
           return b.stats.activeStations - a.stats.activeStations;
         case 'name':
@@ -272,7 +272,11 @@ export class CompareModal {
           <div class="cell-pct">${row.stats.areaPct.toFixed(1)}%</div>
           <div class="mini-bar"><div class="mini-bar-fill area-fill" style="width:${Math.min(100, row.stats.areaPct)}%"></div></div>
         </td>
-        <td class="num-col">${row.closeIn === null ? '—' : row.closeIn.toFixed(0) + '%'}</td>
+        <td class="diag-col">${
+          row.diag
+            ? `<span class="diag diag-${row.diag.key}" title="${row.diag.label}">${row.diag.short}</span><span class="diag-nums">${row.diag.near.toFixed(0)}% → ${row.diag.far.toFixed(0)}%</span>`
+            : '—'
+        }</td>
         <td class="num-col">${row.stats.activeStations}</td>
       `;
 
