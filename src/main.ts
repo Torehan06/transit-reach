@@ -5,6 +5,7 @@ import { CompareModal } from './compare';
 import { cityLabel, fillCitySelect } from './regions';
 import { ReachChart } from './reach';
 import { DETOUR_FACTOR, Scenario, decodeSketch } from './scenario';
+import { CircleTool } from './circle';
 import { UcStats, loadUrbanData, ucFor, urbanManifest } from './urban';
 import { findGaps, renderGaps } from './gaps';
 import { BottomSheet } from './sheet';
@@ -36,6 +37,7 @@ let transitMap: TransitMap;
 let compareModal: CompareModal;
 let reachChart: ReachChart;
 let scenario: Scenario;
+let circleTool: CircleTool;
 const stationCache = new Map<string, StationRecord[]>();
 let lastInspect: InspectResult | null = null;
 
@@ -165,8 +167,11 @@ function parseHashState(): void {
   pendingOverlays = cmp ? cmp.split('.').filter((id) => manifest.cities[id]).slice(0, 3) : [];
   const sk = params.get('sk');
   pendingSketch = sk ? decodeSketch(sk) : null;
+  const cp = params.get('c');
+  pendingCircle = cp ? CircleTool.parse(cp) : null;
 }
 
+let pendingCircle: { center: [number, number]; radius: number } | null = null;
 let pendingArea: 'city' | 'urban' = 'city';
 let pendingSketch: { vertices: [number, number][]; spacing: number } | null = null;
 
@@ -181,6 +186,8 @@ function syncHashState(): void {
   if (state.area === 'urban') params.set('a', 'u');
   const sk = scenario?.shareParam();
   if (sk) params.set('sk', sk);
+  const cp = circleTool?.shareParam();
+  if (cp) params.set('c', cp);
   history.replaceState(null, '', `#${params.toString()}`);
 }
 
@@ -360,6 +367,7 @@ function escapeHtml(s: string): string {
 function updateAnalysis(): void {
   const city = statsCity();
   reachChart?.update({ cityId: state.cityId, enabledModes: state.enabledModes, distanceM: state.distanceM, unit: state.unit });
+  circleTool?.update({ modes: [...state.enabledModes], distanceM: state.distanceM, unit: state.unit });
   scenario?.update({
     modes: [...state.enabledModes],
     distanceM: state.distanceM,
@@ -431,6 +439,7 @@ async function selectCity(cityId: string): Promise<void> {
   renderModeToggles();
   updateCoverageKPIs();
   if (scenario?.isActive()) scenario.stop();
+  if (circleTool?.isActive()) circleTool.stop();
   gapsList.innerHTML = '<p class="gaps-empty">The largest clusters of people beyond the walking distance, in the area on screen.</p>';
   updateAnalysis();
   sheet.snapTo(sheet.current, false); // content height may have changed
@@ -576,6 +585,11 @@ async function bootstrap(): Promise<void> {
       updateLegendZoom(transitMap.map.getZoom());
       selectCity(state.cityId);
       if (pendingArea === 'urban' && manifest.has_uc) void setArea('urban');
+      const cp = pendingCircle;
+      if (cp) {
+        pendingCircle = null;
+        transitMap.map.once('idle', () => circleTool.start(cp.center, cp.radius));
+      }
       const sk = pendingSketch;
       if (sk) {
         pendingSketch = null;
@@ -586,8 +600,22 @@ async function bootstrap(): Promise<void> {
     onInspect: (res) => renderInspectCard(res),
   });
 
+  circleTool = new CircleTool(
+    transitMap,
+    (active) => {
+      document.body.classList.toggle('circle-active', active);
+      if (active) {
+        if (scenario.isActive()) scenario.stop();
+        sheet.snapTo('peek');
+      }
+      updateAnalysis();
+    },
+    () => syncHashState()
+  );
+
   scenario = new Scenario(transitMap, (active) => {
     document.body.classList.toggle('scenario-active', active);
+    if (active && circleTool.isActive()) circleTool.stop();
     if (active) sheet.snapTo('peek');
     updateAnalysis();
   }, () => syncHashState());

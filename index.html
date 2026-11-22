@@ -180,6 +180,23 @@
         </div>
       </aside>
 
+      <!-- Measure a circle -->
+      <button id="circle-btn" class="scenario-btn circle-btn" type="button" aria-label="Measure a circle">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><circle cx="10" cy="10" r="7"/><circle cx="10" cy="10" r="1.4" fill="currentColor"/></svg>
+        <span>Measure a circle</span>
+      </button>
+      <div id="circle-card" class="scenario-card circle-card hidden" role="status" aria-live="polite">
+        <div class="scenario-top">
+          <span class="scenario-title circle-title">Circle</span>
+          <span class="circle-r">radius <b id="circle-radius-label">1 km</b></span>
+        </div>
+        <input id="circle-radius" class="circle-slider" type="range" min="200" max="5000" step="50" value="1000" aria-label="Circle radius" />
+        <div id="circle-body" class="scenario-body"></div>
+        <div class="scenario-actions">
+          <button id="circle-done" class="text-btn strong" type="button">Done</button>
+        </div>
+      </div>
+
       <!-- Sketch-a-line scenario -->
       <button id="scenario-btn" class="scenario-btn" type="button" aria-label="Sketch a new line">
         <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M3 15 L8 9 L12 12 L17 5"/><circle cx="3" cy="15" r="1.6" fill="currentColor"/><circle cx="17" cy="5" r="1.6" fill="currentColor"/></svg>

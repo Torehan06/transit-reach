@@ -75,6 +75,7 @@ export class Scenario {
   private recalcTimer: number | null = null;
   private onActiveChange: (active: boolean) => void;
   private onSketchChange: () => void;
+  private clickHandler: ((ll: [number, number]) => void) | null = null;
 
   constructor(tm: TransitMap, onActiveChange: (active: boolean) => void, onSketchChange: () => void = () => {}) {
     this.tm = tm;
@@ -157,10 +158,11 @@ export class Scenario {
     this.ensureLayers();
     this.active = true;
     this.vertices = first ? [first] : [];
-    this.tm.clickOverride = (ll) => {
+    this.clickHandler = (ll) => {
       this.vertices.push(ll);
       this.redraw();
     };
+    this.tm.clickOverride = this.clickHandler;
     this.tm.clearInspect();
     this.card.classList.remove('hidden');
     this.toggleBtn.classList.add('active');
@@ -172,7 +174,7 @@ export class Scenario {
   public stop(): void {
     this.active = false;
     this.vertices = [];
-    this.tm.clickOverride = null;
+    if (this.tm.clickOverride === this.clickHandler) this.tm.clickOverride = null;
     this.card.classList.add('hidden');
     this.toggleBtn.classList.remove('active');
     this.tm.map.getCanvas().style.cursor = '';
