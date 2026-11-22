@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 import re
 import subprocess
+import time
 import unicodedata
 from dataclasses import dataclass
 from pathlib import Path
@@ -141,7 +142,19 @@ def _download_file(url: str, dest: Path) -> Path:
     if dest.exists() and dest.stat().st_size > 10_000:
         return dest
     print(f"  Downloading {url}...")
-    resp = requests.get(url, stream=True, timeout=180)
+    resp = None
+    for attempt in range(5):
+        # Geofabrik returns 502/503/timeouts under load; back off and retry.
+        try:
+            resp = requests.get(url, stream=True, timeout=180)
+            if resp.status_code < 500:
+                break
+            print(f"  HTTP {resp.status_code}, retrying in {60 * (attempt + 1)}s")
+        except requests.RequestException as exc:
+            print(f"  {type(exc).__name__}, retrying in {60 * (attempt + 1)}s")
+            if attempt == 4:
+                raise
+        time.sleep(60 * (attempt + 1))
     if resp.status_code == 404:
         # Geofabrik's "-latest" can redirect to a dated file (-YYMMDD) that is not
         # uploaded yet while the daily update runs; fall back to the previous days.
