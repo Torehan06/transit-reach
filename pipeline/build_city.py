@@ -106,7 +106,8 @@ def save_summary(summary: Dict[str, Any], ordered_ids: List[str]) -> None:
     main["cities"] = {cid: {k: v for k, v in val.items() if k not in ("uc", "nres")} for cid, val in ordered_cities.items()}
     uc = {cid: val["uc"] for cid, val in ordered_cities.items() if val.get("uc")}
     nres = {cid: val["nres"] for cid, val in ordered_cities.items() if val.get("nres")}
-    main["has_nres"] = len(nres) >= 0.9 * max(1, len(ordered_cities))
+    # Shipped incrementally: the site shows the workplaces stat for cities that have it.
+    main["has_nres"] = len(nres) > 0
     # Only advertise the urban-area view once (nearly) every city has it.
     main["has_uc"] = len(uc) >= 0.9 * max(1, len(ordered_cities))
     for path, payload in (
