@@ -103,6 +103,10 @@ const COUNTRY_CONTINENT: Record<string, Continent> = {
 // are on the European side.
 const CITY_OVERRIDES: Record<string, Continent> = {
   istanbul: 'Europe',
+  // Eastern Thrace is geographically in Europe.
+  edirne: 'Europe',
+  kirklareli: 'Europe',
+  tekirdag: 'Europe',
 };
 
 export function continentOf(city: Pick<CitySummary, 'id' | 'country' | 'region'>): Continent | string {
