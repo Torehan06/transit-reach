@@ -1891,3 +1891,11 @@ body.area-urban .mobile-kpis {
 .compare-table.no-nres .nres-col {
   display: none;
 }
+
+.street-mode-row {
+  cursor: default;
+}
+
+.legend-item.hidden {
+  display: none;
+}

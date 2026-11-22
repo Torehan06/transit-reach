@@ -8,6 +8,11 @@ const OPENFREEMAP_STYLE = 'https://tiles.openfreemap.org/styles/dark';
 const COLOR_STREET_UNCOVERED = 'rgba(148, 163, 184, 0.16)';
 const COLOR_DOT_COVERED = '#fbbf24';
 const COLOR_DOT_UNCOVERED = '#94a3b8';
+// "Reach" street mode: the original in/out colouring.
+const COLOR_STREET_COVERED = '#2dd4bf';
+const COLOR_DOT_UNCOVERED_REACH = '#64748b';
+
+export type StreetMode = 'reach' | 'time';
 
 /**
  * Street colour by walking time to the nearest selected station (5 km/h):
@@ -258,7 +263,20 @@ export class TransitMap {
     return ['min', ...args] as ExpressionSpecification;
   }
 
-  private buildStreetColorExpr(modes: ModeCode[], _distanceM: number): ExpressionSpecification | string {
+  /** 'time' = gradient by walking time; 'reach' = original within/beyond the slider. */
+  public streetMode: StreetMode = 'time';
+
+  public setStreetMode(mode: StreetMode): void {
+    this.streetMode = mode;
+    if (this.ready && this.currentCity) this.applyPaintExpressions();
+  }
+
+  private buildStreetColorExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | string {
+    if (this.streetMode === 'reach') {
+      const m = this.buildMinDistExpression(modes);
+      if (!m || distanceM <= 0) return COLOR_STREET_UNCOVERED;
+      return ['case', ['<=', m, distanceM], COLOR_STREET_COVERED, COLOR_STREET_UNCOVERED];
+    }
     // Gradient by walking time, independent of the slider: an 850 m gap and a
     // 4 km desert should not look the same.
     const minExpr = this.buildMinDistExpression(modes);
@@ -272,20 +290,26 @@ export class TransitMap {
     // grey population dots (people with no station) carry the signal and
     // empty land (highways, cemeteries, campuses) reads as merely dark.
     const minExpr = this.buildMinDistExpression(modes);
+    if (this.streetMode === 'reach') {
+      if (!minExpr || distanceM <= 0) return 0.45;
+      return ['case', ['<=', minExpr, distanceM], 0.88, 0.42];
+    }
     if (!minExpr) return 0.4;
     return ['case', ['<=', minExpr, distanceM], 0.95, ['>', minExpr, 3300], 0.35, 0.55];
   }
 
   private buildDotColorExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | string {
     const minExpr = this.buildMinDistExpression(modes);
-    if (!minExpr || distanceM <= 0) return COLOR_DOT_UNCOVERED;
-    return ['case', ['<=', minExpr, distanceM], COLOR_DOT_COVERED, COLOR_DOT_UNCOVERED];
+    const unc = this.streetMode === 'reach' ? COLOR_DOT_UNCOVERED_REACH : COLOR_DOT_UNCOVERED;
+    if (!minExpr || distanceM <= 0) return unc;
+    return ['case', ['<=', minExpr, distanceM], COLOR_DOT_COVERED, unc];
   }
 
   private buildDotOpacityExpr(modes: ModeCode[], distanceM: number): ExpressionSpecification | number {
     const minExpr = this.buildMinDistExpression(modes);
-    if (!minExpr || distanceM <= 0) return 0.6;
-    return ['case', ['<=', minExpr, distanceM], 0.92, 0.6];
+    const unc = this.streetMode === 'reach' ? 0.34 : 0.6;
+    if (!minExpr || distanceM <= 0) return unc;
+    return ['case', ['<=', minExpr, distanceM], 0.92, unc];
   }
 
   public async loadCity(

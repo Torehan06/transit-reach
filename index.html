@@ -157,6 +157,13 @@
 
           <!-- Layer Toggles -->
           <section class="control-section layers-section">
+            <div class="toggle-row street-mode-row">
+              <span class="toggle-text">Streets</span>
+              <div class="seg-toggle" role="group" aria-label="Street colouring">
+                <button type="button" class="seg-btn" data-street-mode="reach" aria-pressed="false">In reach</button>
+                <button type="button" class="seg-btn active" data-street-mode="time" aria-pressed="true">Walk time</button>
+              </div>
+            </div>
             <label class="toggle-row">
               <span class="toggle-text">
                 <span class="legend-dot dot-covered"></span>
@@ -248,6 +255,8 @@
       <!-- Floating Legend & Attribution -->
       <div class="map-legend" id="map-legend" aria-label="Map legend">
         <div class="legend-items">
+          <span class="legend-item legend-reach hidden"><span class="legend-line covered"></span>Within reach</span>
+          <span class="legend-item legend-reach hidden"><span class="legend-line uncovered"></span>Beyond reach</span>
           <span class="legend-item legend-walk" title="Street colour = walking time to the nearest selected station. Streets beyond the slider distance are faded.">
             <span class="legend-ramp-wrap"><span class="legend-ramp"></span><span class="legend-ramp-ticks"><i>5</i><i>10</i><i>15</i><i>20</i><i>30 min</i></span></span>
           </span>

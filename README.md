@@ -3,7 +3,7 @@
 Interactive static web app showing how much of each city—and how many of its residents—are within walking distance of rail and rapid transit across **148 cities on 6 continents**.
 
 - **Street-network walking distance** (not straight-line circles) from 0 to 2 miles (0 to 3.22 km), with instant client-side slider updates and a `mi` / `km` toggle
-- **Streets coloured by walking time** to the nearest station (bright under 5 min, fading through 10/15/20, dark past 30), so an 850 m gap no longer looks like a 4 km desert. The slider sets the threshold for the stats; streets beyond it are dimmed so the grey population dots, not empty land, show who is unserved
+- **Two street modes** (simple toggle): *In reach* (the original teal-or-grey cut at the slider distance) or *Walk time*. **Streets coloured by walking time** to the nearest station (bright under 5 min, fading through 10/15/20, dark past 30), so an 850 m gap no longer looks like a 4 km desert. The slider sets the threshold for the stats; streets beyond it are dimmed so the grey population dots, not empty land, show who is unserved
 - **6 toggleable transit modes**: Metro / Subway, Tram / Light Rail, Commuter / Regional Rail, BRT, Ferry, and Funicular / Cable Car (with duplicate OSM station/platform nodes merged per mode)
 - **Zoom-adaptive population dot-density layer** built from GHSL GHS-POP 2025 (100 m equal-area grid), with fixed deterministic dot positions colored covered vs. uncovered and live people-per-dot scaling (`500` → `250` → `125` → `25` people/dot)
 - **Side-by-side & ranked comparison** across comparable city-proper boundaries grouped into 6 continents, for any combination of distance and transit modes

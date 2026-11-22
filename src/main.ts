@@ -11,7 +11,7 @@ import { drawBarriers, findBarriers, renderBarriers } from './barriers';
 import { UcStats, loadUrbanData, ucFor, urbanManifest } from './urban';
 import { findGaps, renderGaps } from './gaps';
 import { BottomSheet } from './sheet';
-import { InspectResult, TransitMap } from './map';
+import { InspectResult, StreetMode, TransitMap } from './map';
 import {
   DEFAULT_DISTANCE_M,
   computeCityCoverage,
@@ -118,12 +118,30 @@ function updateBoundaryNote(): void {
         ? `No urban-centre data for this city; showing ${currentCity().boundary_desc}.`
         : `${c.boundary_desc} Dots are only drawn inside the city limits; the dashed line marks the urban area.`
       : currentCity().boundary_desc;
+  document.querySelectorAll<HTMLButtonElement>('[data-street-mode]').forEach((b) =>
+    b.addEventListener('click', () => setStreetMode(b.dataset.streetMode === 'reach' ? 'reach' : 'time'))
+  );
+
   document.querySelectorAll<HTMLButtonElement>('[data-area]').forEach((b) => {
     const on = b.dataset.area === state.area;
     b.classList.toggle('active', on);
     b.setAttribute('aria-pressed', String(on));
   });
   transitMap?.setUrbanOutline(state.area === 'urban' && urbanData ? ucFor(urbanData, state.cityId)?.geom ?? null : null);
+}
+
+let streetMode: StreetMode = 'time';
+function setStreetMode(mode: StreetMode): void {
+  streetMode = mode;
+  transitMap?.setStreetMode(mode);
+  document.querySelectorAll<HTMLButtonElement>('[data-street-mode]').forEach((b) => {
+    const on = b.dataset.streetMode === mode;
+    b.classList.toggle('active', on);
+    b.setAttribute('aria-pressed', String(on));
+  });
+  document.querySelectorAll('.legend-reach').forEach((el) => el.classList.toggle('hidden', mode !== 'reach'));
+  document.querySelector('.legend-walk')?.classList.toggle('hidden', mode !== 'time');
+  syncHashState();
 }
 
 async function setArea(area: 'city' | 'urban'): Promise<void> {
@@ -167,6 +185,7 @@ function parseHashState(): void {
     state.unit = u;
   }
   pendingArea = params.get('a') === 'u' ? 'urban' : 'city';
+  pendingStreetMode = params.get('s') === 'r' ? 'reach' : 'time';
   const cmp = params.get('cmp');
   pendingOverlays = cmp ? cmp.split('.').filter((id) => manifest.cities[id]).slice(0, 3) : [];
   const sk = params.get('sk');
@@ -176,6 +195,7 @@ function parseHashState(): void {
 }
 
 let pendingCircle: { center: [number, number]; radius: number } | null = null;
+let pendingStreetMode: StreetMode = 'time';
 let pendingArea: 'city' | 'urban' = 'city';
 let pendingSketch: { vertices: [number, number][]; spacing: number } | null = null;
 
@@ -188,6 +208,7 @@ function syncHashState(): void {
   params.set('u', state.unit);
   if (reachChart?.overlays.length) params.set('cmp', reachChart.overlays.join('.'));
   if (state.area === 'urban') params.set('a', 'u');
+  if (streetMode === 'reach') params.set('s', 'r');
   const sk = scenario?.shareParam();
   if (sk) params.set('sk', sk);
   const cp = circleTool?.shareParam();
@@ -536,6 +557,10 @@ function bindEvents(): void {
     transitMap.clearInspect();
   });
 
+  document.querySelectorAll<HTMLButtonElement>('[data-street-mode]').forEach((b) =>
+    b.addEventListener('click', () => setStreetMode(b.dataset.streetMode === 'reach' ? 'reach' : 'time'))
+  );
+
   document.querySelectorAll<HTMLButtonElement>('[data-area]').forEach((b) =>
     b.addEventListener('click', () => void setArea(b.dataset.area === 'urban' ? 'urban' : 'city'))
   );
@@ -623,6 +648,7 @@ async function bootstrap(): Promise<void> {
   transitMap = new TransitMap(document.getElementById('map')!, {
     onReady: () => {
       updateLegendZoom(transitMap.map.getZoom());
+      if (pendingStreetMode === 'reach') setStreetMode('reach');
       selectCity(state.cityId);
       if (pendingArea === 'urban' && manifest.has_uc) void setArea('urban');
       const cp = pendingCircle;
